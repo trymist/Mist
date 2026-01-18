@@ -1,10 +1,15 @@
-name: PR Build Check
+name: Frontend build check
 
 on:
   pull_request:
+    paths:
+      - "dash/**"
+
   push: 
     branches: 
       - main
+    paths: 
+      - "dash/**"
 
 jobs:
   build:
@@ -23,12 +28,3 @@ jobs:
       - name: Build frontend
         working-directory: dash 
         run: bun run build
-
-      - name: Setup Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.22'
-
-      - name: Build server 
-        working-directory: server 
-        run: go build ./...
