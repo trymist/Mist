@@ -2,9 +2,16 @@ name: Tests
 
 on:
   pull_request:
+    paths:
+      - "test/**"
+      - "server/**"
+
   push: 
     branches: 
       - main
+    paths:
+      - "test/**"
+      - "server/**"
 
 jobs:
   build:
