@@ -88,7 +88,11 @@ func getSQLiteColumnType(field *schema.Field) string {
 	}
 }
 
-func MigrateDb(dbInstance *gorm.DB) error {
+func MigrateDB(dbInstance *gorm.DB) error {
+	return migrateDbInternal(dbInstance)
+}
+
+func migrateDbInternal(dbInstance *gorm.DB) error {
 	migrator := dbInstance.Migrator()
 
 	allModels := []interface{}{
