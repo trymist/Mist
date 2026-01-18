@@ -30,7 +30,7 @@ func InitDB() (*gorm.DB, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database: %v", err)
 	}
-	err = MigrateDb(db)
+	err = MigrateDB(db)
 	if err != nil {
 		return nil, err
 	}
