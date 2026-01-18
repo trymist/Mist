@@ -1,12 +1,16 @@
 import { defineConfig } from 'vitepress'
 
 export default defineConfig({
+
   title: 'Mist',
   description: 'Self-hostable Platform-as-a-Service',
   base: '/',
   head: [
     ['link', { rel: 'icon', type: 'image/png', href: '/mist.png' }]
   ],
+  sitemap: {
+    hostname: 'https://trymist.cloud'
+  },
 
   themeConfig: {
     logo: '/mist.png',
