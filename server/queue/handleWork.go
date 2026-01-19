@@ -1,6 +1,7 @@
 package queue
 
 import (
+	"context"
 	"fmt"
 	"sync"
 
@@ -26,6 +27,11 @@ func (q *Queue) HandleWork(id int64, db *gorm.DB) {
 			models.UpdateDeploymentStatus(id, "failed", "failed", 0, &errMsg)
 		}
 	}()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	Register(id, cancel)
+	defer Unregister(id)
 
 	appId, err := models.GetAppIDByDeploymentID(id)
 	if err != nil {
@@ -79,7 +85,7 @@ func (q *Queue) HandleWork(id int64, db *gorm.DB) {
 		logger.Info("Cloning repository")
 		models.UpdateDeploymentStatus(id, "cloning", "cloning", 20, nil)
 
-		err = github.CloneRepo(appId, logFile)
+		err = github.CloneRepo(ctx, appId, logFile)
 		if err != nil {
 			logger.Error(err, "Failed to clone repository")
 			errMsg := fmt.Sprintf("Failed to clone repository: %v", err)
@@ -92,7 +98,7 @@ func (q *Queue) HandleWork(id int64, db *gorm.DB) {
 		logger.Info("Skipping git clone for database app")
 	}
 
-	_, err = docker.DeployerMain(id, db, logFile, logger)
+	_, err = docker.DeployerMain(ctx, id, db, logFile, logger)
 	if err != nil {
 		logger.Error(err, "Deployment failed")
 		errMsg := fmt.Sprintf("Deployment failed: %v", err)

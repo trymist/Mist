@@ -1,6 +1,7 @@
 package docker
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -11,7 +12,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func DeployerMain(Id int64, db *gorm.DB, logFile *os.File, logger *utils.DeploymentLogger) (string, error) {
+func DeployerMain(ctx context.Context, Id int64, db *gorm.DB, logFile *os.File, logger *utils.DeploymentLogger) (string, error) {
 	dep, err := LoadDeployment(Id, db)
 	if err != nil {
 		logger.Error(err, "Failed to load deployment")
@@ -44,7 +45,7 @@ func DeployerMain(Id int64, db *gorm.DB, logFile *os.File, logger *utils.Deploym
 	imageTag := dep.CommitHash
 	containerName := fmt.Sprintf("app-%d", app.ID)
 
-	err = DeployApp(dep, &app, appContextPath, imageTag, containerName, db, logFile, logger)
+	err = DeployApp(ctx, dep, &app, appContextPath, imageTag, containerName, db, logFile, logger)
 	if err != nil {
 		logger.Error(err, "DeployApp failed")
 		dep.Status = "failed"

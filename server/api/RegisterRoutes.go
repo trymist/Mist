@@ -96,6 +96,7 @@ func RegisterRoutes(mux *http.ServeMux) {
 	mux.Handle("POST /api/deployments/create", middleware.AuthMiddleware()(http.HandlerFunc(deployments.AddDeployHandler)))
 	mux.Handle("POST /api/deployments/getByAppId", middleware.AuthMiddleware()(http.HandlerFunc(deployments.GetByApplicationID)))
 	mux.Handle("GET /api/deployments/logs", middleware.AuthMiddleware()(http.HandlerFunc(deployments.GetCompletedDeploymentLogsHandler)))
+	mux.Handle("POST /api/deployments/stopDep", middleware.AuthMiddleware()(http.HandlerFunc(deployments.StopDeployment)))
 
 	mux.Handle("GET /api/templates/list", middleware.AuthMiddleware()(http.HandlerFunc(templates.ListServiceTemplates)))
 	mux.Handle("GET /api/templates/get", middleware.AuthMiddleware()(http.HandlerFunc(templates.GetServiceTemplateByName)))

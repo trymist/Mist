@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/corecollectives/mist/models"
 	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
 )
@@ -41,7 +42,15 @@ func (q *Queue) StartWorker(db *gorm.DB) {
 	go func() {
 		defer q.wg.Done()
 		for id := range q.jobs {
-			
+			status, err := models.GetDeploymentStatus(id)
+			if err != nil {
+				log.Error().Err(err).Msg("Failed to get deployment status")
+				continue
+			}
+			if status == "stopped" {
+				log.Info().Msgf("Deployment %d has been stopped before processing, skipping", id)
+				continue
+			}
 			q.HandleWork(id, db)
 		}
 

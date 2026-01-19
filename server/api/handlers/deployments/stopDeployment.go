@@ -6,6 +6,7 @@ import (
 
 	"github.com/corecollectives/mist/api/handlers"
 	"github.com/corecollectives/mist/models"
+	"github.com/corecollectives/mist/queue"
 )
 
 type stopDeployment struct {
@@ -33,5 +34,11 @@ func StopDeployment(w http.ResponseWriter, r *http.Request) {
 		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to stop deployment", err.Error())
 		return
 	}
-	handlers.SendResponse(w, http.StatusOK, true, nil, "Deployment stopped successfully", "")
+	wasRunning := queue.Cancel(req.DeploymentID)
+	message := "Deployment marked as stopped"
+	if wasRunning {
+		message = "Deployment aborted immediately"
+	}
+
+	handlers.SendResponse(w, http.StatusOK, true, nil, message, "")
 }

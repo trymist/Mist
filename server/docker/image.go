@@ -12,8 +12,8 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-func BuildImage(imageTag, contextPath string, envVars map[string]string, logfile *os.File) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
+func BuildImage(ctx context.Context, imageTag, contextPath string, envVars map[string]string, logfile *os.File) error {
+	timeoutCtx, cancel := context.WithTimeout(ctx, 15*time.Minute)
 	defer cancel()
 	cli, err := client.New(client.FromEnv)
 	if err != nil {
@@ -41,10 +41,13 @@ func BuildImage(imageTag, contextPath string, envVars map[string]string, logfile
 
 	log.Info().Str("image_tag", imageTag).Msg("Building Docker image")
 
-	resp, err := cli.ImageBuild(ctx, buildCtx, buildOptions)
+	resp, err := cli.ImageBuild(timeoutCtx, buildCtx, buildOptions)
 	if err != nil {
-		if ctx.Err() == context.DeadlineExceeded {
+		if timeoutCtx.Err() == context.DeadlineExceeded {
 			return fmt.Errorf("image build timed out after 15 minutes")
+		}
+		if timeoutCtx.Err() == context.Canceled {
+			return context.Canceled
 		}
 		return err
 	}
@@ -54,8 +57,6 @@ func BuildImage(imageTag, contextPath string, envVars map[string]string, logfile
 		return err
 	}
 	return nil
-
-
 
 	// legacy exec method
 	//
@@ -90,8 +91,8 @@ func BuildImage(imageTag, contextPath string, envVars map[string]string, logfile
 	// return nil
 }
 
-func PullDockerImage(imageName string, logfile *os.File) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
+func PullDockerImage(ctx context.Context, imageName string, logfile *os.File) error {
+	timeoutCtx, cancel := context.WithTimeout(ctx, 15*time.Minute)
 	defer cancel()
 
 	cli, err := client.New(client.FromEnv)
@@ -100,10 +101,13 @@ func PullDockerImage(imageName string, logfile *os.File) error {
 	}
 
 	log.Debug().Str("image_name", imageName).Msg("pulling image")
-	resp, err := cli.ImagePull(ctx, imageName, client.ImagePullOptions{})
+	resp, err := cli.ImagePull(timeoutCtx, imageName, client.ImagePullOptions{})
 	if err != nil {
-		if ctx.Err() == context.DeadlineExceeded {
+		if timeoutCtx.Err() == context.DeadlineExceeded {
 			return fmt.Errorf("image pull timed out after 15 minutes")
+		}
+		if timeoutCtx.Err() == context.Canceled {
+			return context.Canceled
 		}
 		return err
 	}
