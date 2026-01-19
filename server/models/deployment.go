@@ -207,6 +207,20 @@ func UpdateContainerInfo(depID int64, containerID, containerName, imageTag strin
 	return db.Model(&Deployment{}).Where("id = ?", depID).Updates(updates).Error
 }
 
+func GetDeploymentStatus(depID int64) (string, error) {
+	var status string
+	result := db.Model(&Deployment{}).Select("status").Where("id = ?", depID).Scan(&status)
+	if result.Error != nil {
+		return "", result.Error
+	}
+
+	if result.RowsAffected == 0 {
+		return "", gorm.ErrRecordNotFound
+	}
+
+	return status, nil
+}
+
 //#############################################################################################################
 //ARCHIVED CODE BELOW------>
 

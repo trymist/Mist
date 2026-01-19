@@ -41,6 +41,7 @@ func (q *Queue) StartWorker(db *gorm.DB) {
 	go func() {
 		defer q.wg.Done()
 		for id := range q.jobs {
+			
 			q.HandleWork(id, db)
 		}
 
