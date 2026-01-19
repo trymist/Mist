@@ -55,6 +55,8 @@ func BuildImage(imageTag, contextPath string, envVars map[string]string, logfile
 	}
 	return nil
 
+
+
 	// legacy exec method
 	//
 	//
