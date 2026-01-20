@@ -142,12 +142,18 @@ func UpdateEnvVariable(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	updatedEnv, err := models.GetEnvVariableByID(req.ID)
+	if err != nil {
+		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to fetch updated environment variable", err.Error())
+		return
+	}
+
 	models.LogUserAudit(userInfo.ID, "update", "env_variable", &req.ID, map[string]interface{}{
 		"app_id": env.AppID,
 		"key":    req.Key,
 	})
 
-	handlers.SendResponse(w, http.StatusOK, true, nil, "Environment variable updated successfully", "")
+	handlers.SendResponse(w, http.StatusOK, true, updatedEnv, "Environment variable updated successfully", "")
 }
 
 func DeleteEnvVariable(w http.ResponseWriter, r *http.Request) {
