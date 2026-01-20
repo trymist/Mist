@@ -47,6 +47,10 @@ func DeployerMain(ctx context.Context, Id int64, db *gorm.DB, logFile *os.File, 
 
 	err = DeployApp(ctx, dep, &app, appContextPath, imageTag, containerName, db, logFile, logger)
 	if err != nil {
+		if ctx.Err() == context.Canceled {
+			logger.Info("Deployment cancelled by user")
+			return "", context.Canceled
+		}
 		logger.Error(err, "DeployApp failed")
 		dep.Status = "failed"
 		dep.Stage = "failed"
@@ -58,7 +62,6 @@ func DeployerMain(ctx context.Context, Id int64, db *gorm.DB, logFile *os.File, 
 
 	logger.Info("Deployment completed successfully")
 
-	// Run automatic cleanup if enabled in settings
 	settings, err := models.GetSystemSettings()
 	if err != nil {
 		logger.Warn(fmt.Sprintf("Failed to get system settings for cleanup: %v", err))

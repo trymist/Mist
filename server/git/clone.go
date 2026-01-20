@@ -22,6 +22,9 @@ func CloneRepo(ctx context.Context, url string, branch string, logFile *os.File,
 		SingleBranch:  true,
 	})
 	if err != nil {
+		if ctx.Err() == context.Canceled {
+			return fmt.Errorf("deployment stopped by user")
+		}
 		return err
 	}
 

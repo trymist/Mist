@@ -7,7 +7,7 @@ import {
 } from '@/components/ui/sheet';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Terminal, CheckCircle2, XCircle, AlertCircle, Loader2, Square } from 'lucide-react';
+import { Terminal, CheckCircle2, XCircle, AlertCircle, Loader2, Square, CircleSlash, SquareSlash } from 'lucide-react';
 import { useDeploymentMonitor } from '@/hooks';
 import { deploymentsService } from '@/services';
 import { LogLine } from '@/components/logs/log-line';
@@ -99,9 +99,15 @@ export const DeploymentMonitor = ({ deploymentId, open, onClose, onComplete }: P
           icon: <AlertCircle className="h-4 w-4" />,
           label: 'Pending',
         };
+      case 'stopped':
+        return {
+          color: 'bg-slate-500 text-white',
+          icon: <SquareSlash className="h-4 w-4" />,
+          label: 'Stopped',
+        };
       default:
         return {
-          color: 'bg-gray-500 text-white',
+          color: 'bg-slate-500 text-white',
           icon: null,
           label: statusValue,
         };
@@ -110,7 +116,12 @@ export const DeploymentMonitor = ({ deploymentId, open, onClose, onComplete }: P
 
   const canStop = () => {
     const statusValue = status?.status || 'pending';
-    return ['pending', 'building', 'deploying', 'cloning'].includes(statusValue);
+    return ['pending', 'building', 'deploying', 'cloning'].includes(statusValue) && statusValue !== 'stopped';
+  };
+
+  const isTerminalStatus = () => {
+    const statusValue = status?.status || '';
+    return ['success', 'failed', 'stopped'].includes(statusValue);
   };
 
   const statusInfo = getStatusInfo();
@@ -183,8 +194,8 @@ export const DeploymentMonitor = ({ deploymentId, open, onClose, onComplete }: P
               </span>
             </div>
 
-            {/* Progress Bar */}
-            {status.status !== 'success' && status.status !== 'failed' && (
+            {/* Progress Bar - Hide for terminal statuses */}
+            {!isTerminalStatus() && (
               <div className="flex items-center gap-3 min-w-[200px]">
                 <div className="flex-1 bg-muted rounded-full h-2 overflow-hidden">
                   <div
@@ -200,8 +211,23 @@ export const DeploymentMonitor = ({ deploymentId, open, onClose, onComplete }: P
           </div>
         )}
 
-        {/* Error Banner - Only show for live deployments */}
-        {error && isLive && (
+        {/* Stopped Banner */}
+        {status?.status === 'stopped' && (
+          <div className="px-6 py-3 bg-slate-500/10 border-b border-slate-500/30 flex items-center gap-3 shrink-0">
+            <CircleSlash className="h-5 w-5 text-slate-500" />
+            <span className="font-semibold text-slate-500">
+              Deployment Stopped
+            </span>
+            {status.duration && (
+              <span className="text-sm text-slate-500/80">
+                Stopped at {status.progress}% after {status.duration}s
+              </span>
+            )}
+          </div>
+        )}
+
+        {/* Error Banner - Only show for live deployments with failed status */}
+        {error && isLive && status?.status === 'failed' && (
           <div className="px-6 py-3 bg-red-500/10 border-b border-red-500/30 flex items-start gap-3 shrink-0">
             <XCircle className="h-5 w-5 text-red-500 mt-0.5 shrink-0" />
             <div className="flex-1">

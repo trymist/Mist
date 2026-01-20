@@ -1,6 +1,7 @@
 package models
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/corecollectives/mist/utils"
@@ -177,6 +178,9 @@ func UpdateDeploymentStatus(depID int64, status, stage string, progress int, err
 			duration := int(now.Sub(*d.StartedAt).Seconds())
 			updates["duration"] = &duration
 		}
+	}
+	if errorMsg != nil {
+		fmt.Println("updated dep status: ", *errorMsg)
 	}
 	return db.Model(d).Updates(updates).Error
 }

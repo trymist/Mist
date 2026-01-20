@@ -150,8 +150,12 @@ func DeployApp(ctx context.Context, dep *models.Deployment, app *models.App, app
 	models.UpdateDeploymentStatus(dep.ID, "deploying", "deploying", 80, nil)
 
 	logger.Info("Stopping existing container if exists")
-	err = StopRemoveContainer( containerName, logfile)
+	err = StopRemoveContainer(containerName, logfile)
 	if err != nil {
+		if ctx.Err() == context.Canceled {
+			logger.Info("Container stop/remove canceled")
+			return ctx.Err()
+		}
 		logger.Error(err, "Failed to stop/remove existing container")
 		dep.Status = "failed"
 		dep.Stage = "failed"
@@ -172,6 +176,10 @@ func DeployApp(ctx context.Context, dep *models.Deployment, app *models.App, app
 	})
 
 	if err := RunContainer(ctx, app, imageTag, containerName, domains, port, envVars, logfile); err != nil {
+		if ctx.Err() == context.Canceled {
+			logger.Info("Container run canceled")
+			return ctx.Err()
+		}
 		logger.Error(err, "Failed to run container")
 		dep.Status = "failed"
 		dep.Stage = "failed"

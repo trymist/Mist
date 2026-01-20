@@ -5,8 +5,9 @@ import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
 import { DeploymentMonitor } from "@/components/deployments"
 import type { Deployment, App } from "@/types"
-import { Loader2, Clock, CheckCircle2, XCircle, PlayCircle, AlertCircle, Square } from "lucide-react"
+import { Loader2, Clock, CheckCircle2, XCircle, PlayCircle, AlertCircle, Square, SquareSlash } from "lucide-react"
 import { deploymentsService } from "@/services"
+import { cn } from "@/lib/utils"
 
 export const DeploymentsTab = ({ appId, app }: { appId: number; app?: App }) => {
   const [deployments, setDeployments] = useState<Deployment[]>([])
@@ -79,14 +80,14 @@ export const DeploymentsTab = ({ appId, app }: { appId: number; app?: App }) => 
     return () => clearInterval(interval)
   }, [appId])
 
-  // Helper to get status icon and color
+  // Helper to get status badge with styles
   const getStatusBadge = (deployment: Deployment) => {
     const { status, stage } = deployment
 
     switch (status) {
       case 'success':
         return (
-          <Badge className="bg-green-500 text-white flex items-center gap-1.5">
+          <Badge className="bg-green-500 text-white flex items-center gap-1.5 border-0">
             <CheckCircle2 className="h-3 w-3" />
             Success
           </Badge>
@@ -102,16 +103,23 @@ export const DeploymentsTab = ({ appId, app }: { appId: number; app?: App }) => 
       case 'deploying':
       case 'cloning':
         return (
-          <Badge className="bg-blue-500 text-white flex items-center gap-1.5 animate-pulse">
+          <Badge className="bg-blue-500 text-white flex items-center gap-1.5 animate-pulse border-0">
             <Loader2 className="h-3 w-3 animate-spin" />
             {stage.charAt(0).toUpperCase() + stage.slice(1)}
           </Badge>
         )
       case 'pending':
         return (
-          <Badge variant="outline" className="flex items-center gap-1.5">
+          <Badge variant="outline" className="flex items-center gap-1.5 border-slate-300 text-slate-600">
             <AlertCircle className="h-3 w-3" />
             Pending
+          </Badge>
+        )
+      case 'stopped':
+        return (
+          <Badge className="bg-slate-400 text-white flex items-center gap-1.5 border-0">
+            <SquareSlash className="h-3 w-3" />
+            Stopped
           </Badge>
         )
       default:
@@ -119,8 +127,23 @@ export const DeploymentsTab = ({ appId, app }: { appId: number; app?: App }) => 
     }
   }
 
+  // Check if deployment can be stopped
   const canStopDeployment = (deployment: Deployment) => {
-    return ['pending', 'building', 'deploying', 'cloning'].includes(deployment.status)
+    return ['pending', 'building', 'deploying', 'cloning'].includes(deployment.status) && deployment.status !== 'stopped'
+  }
+
+  // Get border class based on status
+  const getDeploymentBorderClass = (status: string) => {
+    switch (status) {
+      case 'success':
+        return 'border-green-200 dark:border-green-800 bg-green-50/50 dark:bg-green-950/20'
+      case 'failed':
+        return 'border-red-200 dark:border-red-800 bg-red-50/50 dark:bg-red-950/20'
+      case 'stopped':
+        return 'border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/20'
+      default:
+        return 'border-border bg-muted/20 hover:bg-muted/30'
+    }
   }
 
   return (
@@ -183,7 +206,10 @@ export const DeploymentsTab = ({ appId, app }: { appId: number; app?: App }) => 
               {deployments.map((d) => (
                 <div
                   key={d.id}
-                  className="flex flex-col sm:flex-row sm:items-start sm:justify-between bg-muted/20 p-4 rounded-lg border hover:bg-muted/30 transition-colors gap-4"
+                  className={cn(
+                    'flex flex-col sm:flex-row sm:items-start sm:justify-between p-4 rounded-lg border transition-colors gap-4',
+                    getDeploymentBorderClass(d.status)
+                  )}
                 >
                   <div className="flex-1 space-y-2">
                     <div className="flex items-center gap-3 flex-wrap">
@@ -194,7 +220,7 @@ export const DeploymentsTab = ({ appId, app }: { appId: number; app?: App }) => 
                       </span>
 
                       {/* Progress indicator for in-progress deployments */}
-                      {d.status !== 'success' && d.status !== 'failed' && d.progress > 0 && (
+                      {d.status !== 'success' && d.status !== 'failed' && d.status !== 'stopped' && d.progress > 0 && (
                         <div className="flex items-center gap-2 w-full sm:w-auto">
                           <div className="w-24 bg-muted rounded-full h-1.5 overflow-hidden">
                             <div
@@ -228,10 +254,19 @@ export const DeploymentsTab = ({ appId, app }: { appId: number; app?: App }) => 
                         </p>
                       )}
 
-                      {d.error_message && (
+                      {/* Show error message for failed deployments */}
+                      {d.error_message && d.status === 'failed' && (
                         <p className="text-xs text-red-500 flex items-start gap-1">
                           <XCircle className="h-3 w-3 mt-0.5 shrink-0" />
                           <span className="break-all">{d.error_message}</span>
+                        </p>
+                      )}
+
+                      {/* Show stopped message for stopped deployments */}
+                      {d.status === 'stopped' && (
+                        <p className="text-xs text-slate-500 flex items-start gap-1">
+                          <SquareSlash className="h-3 w-3 mt-0.5 shrink-0" />
+                          <span className="break-all">Deployment was stopped by user</span>
                         </p>
                       )}
                     </div>

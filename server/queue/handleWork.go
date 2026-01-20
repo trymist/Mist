@@ -87,6 +87,12 @@ func (q *Queue) HandleWork(id int64, db *gorm.DB) {
 
 		err = github.CloneRepo(ctx, appId, logFile)
 		if err != nil {
+			if ctx.Err() == context.Canceled {
+				logger.Info("Deployment cancelled by user")
+				errMsg := "deployment stopped by user"
+				models.UpdateDeploymentStatus(id, "stopped", "stopped", dep.Progress, &errMsg)
+				return
+			}
 			logger.Error(err, "Failed to clone repository")
 			errMsg := fmt.Sprintf("Failed to clone repository: %v", err)
 			models.UpdateDeploymentStatus(id, "failed", "failed", 0, &errMsg)
@@ -100,6 +106,12 @@ func (q *Queue) HandleWork(id int64, db *gorm.DB) {
 
 	_, err = docker.DeployerMain(ctx, id, db, logFile, logger)
 	if err != nil {
+		if ctx.Err() == context.Canceled {
+			logger.Info("Deployment cancelled by user")
+			errMsg := "deployment stopped by user"
+			models.UpdateDeploymentStatus(id, "stopped", "stopped", dep.Progress, &errMsg)
+			return
+		}
 		logger.Error(err, "Deployment failed")
 		errMsg := fmt.Sprintf("Deployment failed: %v", err)
 		models.UpdateDeploymentStatus(id, "failed", "failed", 0, &errMsg)
