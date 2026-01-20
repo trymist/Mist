@@ -144,7 +144,7 @@ func migrateDbInternal(dbInstance *gorm.DB) error {
 	}
 	var Version = models.SystemSettingEntry{
 		Key:   "version",
-		Value: "1.0.3",
+		Value: "1.0.4",
 	}
 
 	dbInstance.Clauses(clause.Insert{Modifier: "OR IGNORE"}).Create(&wildCardDomain)
