@@ -136,7 +136,7 @@ func migrateDbInternal(dbInstance *gorm.DB) error {
 
 	var wildCardDomain = models.SystemSettingEntry{
 		Key:   "wildcard_domain",
-		Value: " ",
+		Value: "",
 	}
 	var MistAppName = models.SystemSettingEntry{
 		Key:   "mist_app_name",
