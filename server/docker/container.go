@@ -253,9 +253,9 @@ func ContainerExists(name string) bool {
 	// return true
 }
 
-func RunContainer(app *models.App, imageTag, containerName string, domains []string, Port int, envVars map[string]string, logfile *os.File) error {
+func RunContainer(ctx context.Context, app *models.App, imageTag, containerName string, domains []string, Port int, envVars map[string]string, logfile *os.File) error {
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	timeoutCtx, cancel := context.WithTimeout(ctx, 5*time.Minute)
 	defer cancel()
 
 	cli, err := client.New(client.FromEnv)
@@ -388,7 +388,7 @@ func RunContainer(app *models.App, imageTag, containerName string, domains []str
 		hostConfig.Resources.Memory = int64(*app.MemoryLimit) * 1024 * 1024
 	}
 
-	resp, err := cli.ContainerCreate(ctx, client.ContainerCreateOptions{
+	resp, err := cli.ContainerCreate(timeoutCtx, client.ContainerCreateOptions{
 		Name:       containerName,
 		Config:     &config,
 		HostConfig: &hostConfig,
@@ -397,7 +397,7 @@ func RunContainer(app *models.App, imageTag, containerName string, domains []str
 		return fmt.Errorf("failed to create container: %w", err)
 	}
 
-	_, err = cli.ContainerStart(ctx, resp.ID, client.ContainerStartOptions{})
+	_, err = cli.ContainerStart(timeoutCtx, resp.ID, client.ContainerStartOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to start container: %w", err)
 	}
@@ -661,7 +661,7 @@ func RecreateContainer(app *models.App) error {
 		return fmt.Errorf("failed to stop/remove container: %w", err)
 	}
 
-	if err := RunContainer(app, imageTag, containerName, domains, port, envVars, nil); err != nil {
+	if err := RunContainer(ctx, app, imageTag, containerName, domains, port, envVars, nil); err != nil {
 		return fmt.Errorf("failed to run container: %w", err)
 	}
 

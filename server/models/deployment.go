@@ -1,6 +1,7 @@
 package models
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/corecollectives/mist/utils"
@@ -178,6 +179,9 @@ func UpdateDeploymentStatus(depID int64, status, stage string, progress int, err
 			updates["duration"] = &duration
 		}
 	}
+	if errorMsg != nil {
+		fmt.Println("updated dep status: ", *errorMsg)
+	}
 	return db.Model(d).Updates(updates).Error
 }
 func MarkDeploymentStarted(depID int64) error {
@@ -205,6 +209,20 @@ func UpdateContainerInfo(depID int64, containerID, containerName, imageTag strin
 		"image_tag":      imageTag,
 	}
 	return db.Model(&Deployment{}).Where("id = ?", depID).Updates(updates).Error
+}
+
+func GetDeploymentStatus(depID int64) (string, error) {
+	var status string
+	result := db.Model(&Deployment{}).Select("status").Where("id = ?", depID).Scan(&status)
+	if result.Error != nil {
+		return "", result.Error
+	}
+
+	if result.RowsAffected == 0 {
+		return "", gorm.ErrRecordNotFound
+	}
+
+	return status, nil
 }
 
 //#############################################################################################################

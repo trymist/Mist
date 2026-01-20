@@ -68,7 +68,7 @@ func GetCompletedDeploymentLogsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if dep.Status != "success" && dep.Status != "failed" {
+	if dep.Status != "success" && dep.Status != "failed" && dep.Status != "stopped" {
 		handlers.SendResponse(w, http.StatusBadRequest, false, nil, "deployment is still in progress, use WebSocket endpoint", "")
 		return
 	}

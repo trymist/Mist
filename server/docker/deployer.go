@@ -1,6 +1,7 @@
 package docker
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -14,7 +15,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func DeployApp(dep *models.Deployment, app *models.App, appContextPath, imageTag, containerName string, db *gorm.DB, logfile *os.File, logger *utils.DeploymentLogger) error {
+func DeployApp(ctx context.Context, dep *models.Deployment, app *models.App, appContextPath, imageTag, containerName string, db *gorm.DB, logfile *os.File, logger *utils.DeploymentLogger) error {
 
 	logger.Info("Starting deployment process")
 
@@ -94,7 +95,11 @@ func DeployApp(dep *models.Deployment, app *models.App, appContextPath, imageTag
 			"image": imageName,
 		})
 
-		if err := PullDockerImage(imageName, logfile); err != nil {
+		if err := PullDockerImage(ctx, imageName, logfile); err != nil {
+			if ctx.Err() == context.Canceled {
+				logger.Info("Docker image pull canceled")
+				return ctx.Err()
+			}
 			logger.Error(err, "Docker image pull failed")
 			dep.Status = "failed"
 			dep.Stage = "failed"
@@ -118,7 +123,11 @@ func DeployApp(dep *models.Deployment, app *models.App, appContextPath, imageTag
 		models.UpdateDeploymentStatus(dep.ID, "building", "building", 50, nil)
 
 		logger.Info("Building Docker image with environment variables")
-		if err := BuildImage(imageTag, appContextPath, envVars, logfile); err != nil {
+		if err := BuildImage(ctx, imageTag, appContextPath, envVars, logfile); err != nil {
+			if ctx.Err() == context.Canceled {
+				logger.Info("Docker image build canceled")
+				return ctx.Err()
+			}
 			logger.Error(err, "Docker image build failed")
 			dep.Status = "failed"
 			dep.Stage = "failed"
@@ -143,6 +152,10 @@ func DeployApp(dep *models.Deployment, app *models.App, appContextPath, imageTag
 	logger.Info("Stopping existing container if exists")
 	err = StopRemoveContainer(containerName, logfile)
 	if err != nil {
+		if ctx.Err() == context.Canceled {
+			logger.Info("Container stop/remove canceled")
+			return ctx.Err()
+		}
 		logger.Error(err, "Failed to stop/remove existing container")
 		dep.Status = "failed"
 		dep.Stage = "failed"
@@ -162,7 +175,11 @@ func DeployApp(dep *models.Deployment, app *models.App, appContextPath, imageTag
 		"appType": app.AppType,
 	})
 
-	if err := RunContainer(app, imageTag, containerName, domains, port, envVars, logfile); err != nil {
+	if err := RunContainer(ctx, app, imageTag, containerName, domains, port, envVars, logfile); err != nil {
+		if ctx.Err() == context.Canceled {
+			logger.Info("Container run canceled")
+			return ctx.Err()
+		}
 		logger.Error(err, "Failed to run container")
 		dep.Status = "failed"
 		dep.Stage = "failed"
