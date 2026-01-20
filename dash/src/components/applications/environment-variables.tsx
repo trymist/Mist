@@ -334,7 +334,7 @@ export const EnvironmentVariables = ({ appId }: EnvironmentVariablesProps) => {
           </p>
         ) : (
           <div className="space-y-2">
-            {envVars.map((env) => (
+            {envVars.map((env) => env ? (
               <div key={env.id} className="p-4 border rounded-lg bg-card">
                 {editingId === env.id ? (
                   <div className="space-y-4">
@@ -394,7 +394,7 @@ export const EnvironmentVariables = ({ appId }: EnvironmentVariablesProps) => {
                   </div>
                 )}
               </div>
-            ))}
+            ) : null)}
           </div>
         )}
       </CardContent>

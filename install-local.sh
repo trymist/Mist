@@ -216,6 +216,36 @@ run_step "Building backend" "cd '$INSTALL_DIR/$GO_BACKEND_DIR' && go build -v -o
 chmod +x "$GO_BINARY_NAME"
 log "Build complete"
 
+# ---------------- Dashboard Build ----------------
+
+if [ -d "$INSTALL_DIR/dash" ]; then
+    if ! command -v node >/dev/null 2>&1; then
+        error "Node.js not found. Install from: https://nodejs.org/"
+        exit 1
+    fi
+    if ! command -v npm >/dev/null 2>&1; then
+        error "npm not found"
+        exit 1
+    fi
+    
+    run_step "Installing dashboard dependencies" "cd '$INSTALL_DIR/dash' && npm install" || exit 1
+    run_step "Building dashboard" "cd '$INSTALL_DIR/dash' && npm run build" || exit 1
+    
+    # Move build output to server/static
+    DASH_BUILD_DIR="$INSTALL_DIR/dash/dist"
+    STATIC_DIR="$INSTALL_DIR/server/static"
+    
+    if [ -d "$DASH_BUILD_DIR" ]; then
+        run_step "Moving dashboard build to static folder" "sudo rm -rf '$STATIC_DIR' && sudo mv '$DASH_BUILD_DIR' '$STATIC_DIR'" || exit 1
+        log "Dashboard built and deployed to server/static"
+    else
+        error "Dashboard build output not found"
+        exit 1
+    fi
+else
+    warn "Dashboard directory not found, skipping dashboard build"
+fi
+
 # ---------------- CLI Tool ----------------
 
 if [ -d "$INSTALL_DIR/cli" ]; then

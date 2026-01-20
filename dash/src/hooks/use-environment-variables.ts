@@ -30,8 +30,9 @@ export const useEnvironmentVariables = (options: UseEnvironmentVariablesOptions)
     try {
       setLoading(true);
       setError(null);
-      const data = await applicationsService.getEnvVariables(appId);
-      setEnvVars(data);
+      const data: Array<EnvVariable | null | undefined> = await applicationsService.getEnvVariables(appId);
+      // Filter out any null/undefined entries
+      setEnvVars(data.filter((env): env is EnvVariable => env != null));
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch environment variables';
       setError(errorMessage);

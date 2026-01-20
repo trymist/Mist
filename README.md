@@ -3,6 +3,7 @@
 A lightweight, self-hostable Platform-as-a-Service built for developers. Deploy Docker applications from Git with automatic builds, custom domains, SSL certificates, and real-time monitoring.
 
 [![PR Build Check](https://github.com/corecollectives/Mist/actions/workflows/pr-build-check.yml/badge.svg)](https://github.com/corecollectives/Mist/actions/workflows/pr-build-check.yml)
+[![Tests](https://github.com/corecollectives/Mist/actions/workflows/tests.yml/badge.svg)](https://github.com/corecollectives/Mist/actions/workflows/tests.yml)
 
 ## Quick Start
 
@@ -31,7 +32,7 @@ After installation, access the dashboard at `http://your-server-ip:8080`
 
 ## Documentation
 
-Full documentation is available at [trymist.cloud](https://trymist.cloud/guide)
+Full documentation is available at [trymist.cloud](https://trymist.cloud/guide/getting-started.html)
 
 ## Development
 
@@ -54,8 +55,8 @@ fyrer
 ## Community
 
 - [GitHub](https://github.com/corecollectives/mist)
-- [Discord](https://discord.gg/kxK8XHR6)
-- [Documentation](https://trymist.cloud/guide)
+- [Discord](https://discord.gg/hr6TCQDDkj)
+- [Documentation](https://trymist.cloud/guide/getting-started.html)
 
 ## License
 

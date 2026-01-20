@@ -1,7 +1,7 @@
 package queue
 
 import (
-	"database/sql"
+	"context"
 	"fmt"
 	"sync"
 
@@ -10,6 +10,7 @@ import (
 	"github.com/corecollectives/mist/github"
 	"github.com/corecollectives/mist/models"
 	"github.com/corecollectives/mist/utils"
+	"gorm.io/gorm"
 )
 
 // to prevent concurrent deployments of same app
@@ -19,13 +20,18 @@ import (
 // then this will be helpful
 var deploymentLocks sync.Map
 
-func (q *Queue) HandleWork(id int64, db *sql.DB) {
+func (q *Queue) HandleWork(id int64, db *gorm.DB) {
 	defer func() {
 		if r := recover(); r != nil {
 			errMsg := fmt.Sprintf("panic during deployment: %v", r)
 			models.UpdateDeploymentStatus(id, "failed", "failed", 0, &errMsg)
 		}
 	}()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	Register(id, cancel)
+	defer Unregister(id)
 
 	appId, err := models.GetAppIDByDeploymentID(id)
 	if err != nil {
@@ -79,8 +85,14 @@ func (q *Queue) HandleWork(id int64, db *sql.DB) {
 		logger.Info("Cloning repository")
 		models.UpdateDeploymentStatus(id, "cloning", "cloning", 20, nil)
 
-		err = github.CloneRepo(appId, logFile)
+		err = github.CloneRepo(ctx, appId, logFile)
 		if err != nil {
+			if ctx.Err() == context.Canceled {
+				logger.Info("Deployment cancelled by user")
+				errMsg := "deployment stopped by user"
+				models.UpdateDeploymentStatus(id, "stopped", "stopped", dep.Progress, &errMsg)
+				return
+			}
 			logger.Error(err, "Failed to clone repository")
 			errMsg := fmt.Sprintf("Failed to clone repository: %v", err)
 			models.UpdateDeploymentStatus(id, "failed", "failed", 0, &errMsg)
@@ -92,8 +104,14 @@ func (q *Queue) HandleWork(id int64, db *sql.DB) {
 		logger.Info("Skipping git clone for database app")
 	}
 
-	_, err = docker.DeployerMain(id, db, logFile, logger)
+	_, err = docker.DeployerMain(ctx, id, db, logFile, logger)
 	if err != nil {
+		if ctx.Err() == context.Canceled {
+			logger.Info("Deployment cancelled by user")
+			errMsg := "deployment stopped by user"
+			models.UpdateDeploymentStatus(id, "stopped", "stopped", dep.Progress, &errMsg)
+			return
+		}
 		logger.Error(err, "Deployment failed")
 		errMsg := fmt.Sprintf("Deployment failed: %v", err)
 		models.UpdateDeploymentStatus(id, "failed", "failed", 0, &errMsg)

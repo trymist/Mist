@@ -20,7 +20,12 @@ func main() {
 		log.Fatal().Err(err).Msg("Error initializing database")
 		return
 	}
-	defer dbInstance.Close()
+	sqldb, err := dbInstance.DB()
+	if err != nil {
+		log.Fatal().Err(err).Msg("Error getting sql.DB from gorm DB")
+		return
+	}
+	defer sqldb.Close()
 	log.Info().Msg("Database initialized successfully")
 	models.SetDB(dbInstance)
 

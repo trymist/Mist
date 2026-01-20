@@ -1,25 +1,26 @@
 package models
 
 import (
-	"database/sql"
 	"encoding/json"
 	"time"
+
+	"gorm.io/gorm"
 )
 
 type AuditLog struct {
-	ID           int64     `json:"id"`
-	UserID       *int64    `json:"userId"`
-	Username     *string   `json:"username"`
-	Email        *string   `json:"email"`
-	Action       string    `json:"action"`
-	ResourceType string    `json:"resourceType"`
+	ID           int64     `gorm:"primaryKey;autoIncrement" json:"id"`
+	UserID       *int64    `gorm:"index" json:"user_id"`
+	Username     *string   `gorm:"-" json:"username"`
+	Email        *string   `gorm:"-" json:"email"`
+	Action       string    `gorm:"not null" json:"action"`
+	ResourceType string    `gorm:"not null" json:"resourceType"`
 	ResourceID   *int64    `json:"resourceId"`
-	ResourceName *string   `json:"resourceName"`
+	ResourceName *string   `gorm:"-" json:"resourceName"`
 	Details      *string   `json:"details"`
-	IPAddress    *string   `json:"ipAddress"`
-	UserAgent    *string   `json:"userAgent"`
-	TriggerType  string    `json:"triggerType"` // "user", "webhook", "system"
-	CreatedAt    time.Time `json:"createdAt"`
+	IPAddress    *string   `gorm:"-" json:"ipAddress"`
+	UserAgent    *string   `gorm:"-" json:"userAgent"`
+	TriggerType  string    `gorm:"-" json:"triggerType"`
+	CreatedAt    time.Time `gorm:"autoCreateTime" json:"createdAt"`
 }
 
 type AuditLogDetails struct {
@@ -30,56 +31,28 @@ type AuditLogDetails struct {
 }
 
 func (a *AuditLog) Create() error {
-	query := `
-		INSERT INTO audit_logs (user_id, action, resource_type, resource_id, details, created_at)
-		VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-		RETURNING id, created_at
-	`
-	return db.QueryRow(query, a.UserID, a.Action, a.ResourceType, a.ResourceID, a.Details).
-		Scan(&a.ID, &a.CreatedAt)
+	return db.Create(a).Error
 }
 
-func GetAllAuditLogs(limit, offset int) ([]AuditLog, error) {
-	query := `
-		SELECT 
-			al.id, 
-			al.user_id, 
-			u.username,
-			u.email,
-			al.action, 
-			al.resource_type, 
-			al.resource_id, 
-			al.details, 
-			al.created_at
-		FROM audit_logs al
-		LEFT JOIN users u ON al.user_id = u.id
-		ORDER BY al.created_at DESC
-		LIMIT ? OFFSET ?
-	`
-	rows, err := db.Query(query, limit, offset)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
+//hlper function for join logic
 
-	var logs []AuditLog
-	for rows.Next() {
-		var log AuditLog
-		err := rows.Scan(
-			&log.ID,
-			&log.UserID,
-			&log.Username,
-			&log.Email,
-			&log.Action,
-			&log.ResourceType,
-			&log.ResourceID,
-			&log.Details,
-			&log.CreatedAt,
-		)
-		if err != nil {
-			return nil, err
-		}
+func getAuditLogsQuery() *gorm.DB {
+	return db.Table("audit_logs").Select(`audit_logs.id, 
+			audit_logs.user_id, 
+			users.username, 
+			users.email, 
+			audit_logs.action, 
+			audit_logs.resource_type, 
+			audit_logs.resource_id, 
+			audit_logs.details, 
+			audit_logs.created_at`).Joins("LEFT JOIN users ON audit_logs.user_id=users.id").Order("audit_logs.created_at DESC")
 
+}
+
+// helper function to reduce repetition
+func logHelper(logs []AuditLog) []AuditLog {
+	for i := range logs {
+		log := &logs[i]
 		if log.UserID == nil {
 			log.TriggerType = "system"
 			if log.Details != nil && (*log.Details != "") {
@@ -93,124 +66,44 @@ func GetAllAuditLogs(limit, offset int) ([]AuditLog, error) {
 		} else {
 			log.TriggerType = "user"
 		}
-
-		logs = append(logs, log)
 	}
-	return logs, nil
+	return logs
 }
 
-func GetAuditLogsByUser(userID int64, limit, offset int) ([]AuditLog, error) {
-	query := `
-		SELECT 
-			al.id, 
-			al.user_id, 
-			u.username,
-			u.email,
-			al.action, 
-			al.resource_type, 
-			al.resource_id, 
-			al.details, 
-			al.created_at
-		FROM audit_logs al
-		LEFT JOIN users u ON al.user_id = u.id
-		WHERE al.user_id = ?
-		ORDER BY al.created_at DESC
-		LIMIT ? OFFSET ?
-	`
-	rows, err := db.Query(query, userID, limit, offset)
+func GetAllAuditLogs(limit, offset int) ([]AuditLog, error) {
+	var logs []AuditLog
+	err := getAuditLogsQuery().Limit(limit).Offset(offset).Scan(&logs).Error
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	return logHelper(logs), nil
+}
 
+func GetAuditLogsByUserID(userID int64, limit, offset int) ([]AuditLog, error) {
 	var logs []AuditLog
-	for rows.Next() {
-		var log AuditLog
-		err := rows.Scan(
-			&log.ID,
-			&log.UserID,
-			&log.Username,
-			&log.Email,
-			&log.Action,
-			&log.ResourceType,
-			&log.ResourceID,
-			&log.Details,
-			&log.CreatedAt,
-		)
-		if err != nil {
-			return nil, err
-		}
-		log.TriggerType = "user"
-		logs = append(logs, log)
+	err := getAuditLogsQuery().Where("audit_logs.user_id = ?", userID).Limit(limit).Offset(offset).Scan(&logs).Error
+	if err != nil {
+		return nil, err
+	}
+	for i := range logs {
+		logs[i].TriggerType = "user"
 	}
 	return logs, nil
 }
 
 func GetAuditLogsByResource(resourceType string, resourceID int64, limit, offset int) ([]AuditLog, error) {
-	query := `
-		SELECT 
-			al.id, 
-			al.user_id, 
-			u.username,
-			u.email,
-			al.action, 
-			al.resource_type, 
-			al.resource_id, 
-			al.details, 
-			al.created_at
-		FROM audit_logs al
-		LEFT JOIN users u ON al.user_id = u.id
-		WHERE al.resource_type = ? AND al.resource_id = ?
-		ORDER BY al.created_at DESC
-		LIMIT ? OFFSET ?
-	`
-	rows, err := db.Query(query, resourceType, resourceID, limit, offset)
+	var logs []AuditLog
+	err := getAuditLogsQuery().Where("audit_logs.resource_type = ? AND audit_logs.resource_id = ?", resourceType, resourceID).
+		Limit(limit).Offset(offset).Scan(&logs).Error
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
-
-	var logs []AuditLog
-	for rows.Next() {
-		var log AuditLog
-		err := rows.Scan(
-			&log.ID,
-			&log.UserID,
-			&log.Username,
-			&log.Email,
-			&log.Action,
-			&log.ResourceType,
-			&log.ResourceID,
-			&log.Details,
-			&log.CreatedAt,
-		)
-		if err != nil {
-			return nil, err
-		}
-
-		if log.UserID == nil {
-			log.TriggerType = "system"
-			if log.Details != nil && (*log.Details != "") {
-				var detailsMap map[string]interface{}
-				if err := json.Unmarshal([]byte(*log.Details), &detailsMap); err == nil {
-					if triggerType, ok := detailsMap["trigger_type"].(string); ok {
-						log.TriggerType = triggerType
-					}
-				}
-			}
-		} else {
-			log.TriggerType = "user"
-		}
-
-		logs = append(logs, log)
-	}
-	return logs, nil
+	return logHelper(logs), nil
 }
 
-func GetAuditLogsCount() (int, error) {
-	query := `SELECT COUNT(*) FROM audit_logs`
-	var count int
-	err := db.QueryRow(query).Scan(&count)
+func GetAuditLogsCount() (int64, error) {
+	var count int64
+	err := db.Model(&AuditLog{}).Count(&count).Error
 	return count, err
 }
 
@@ -257,116 +150,29 @@ func LogSystemAudit(action, resourceType string, resourceID *int64, details inte
 }
 
 func GetAuditLogsByResourceType(resourceType string, limit, offset int) ([]AuditLog, error) {
-	query := `
-		SELECT 
-			al.id, 
-			al.user_id, 
-			u.username,
-			u.email,
-			al.action, 
-			al.resource_type, 
-			al.resource_id, 
-			al.details, 
-			al.created_at
-		FROM audit_logs al
-		LEFT JOIN users u ON al.user_id = u.id
-		WHERE al.resource_type = ?
-		ORDER BY al.created_at DESC
-		LIMIT ? OFFSET ?
-	`
-	rows, err := db.Query(query, resourceType, limit, offset)
+	var logs []AuditLog
+	err := getAuditLogsQuery().Where("audit_logs.resource_type = ?", resourceType).
+		Limit(limit).Offset(offset).Scan(&logs).Error
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
-
-	var logs []AuditLog
-	for rows.Next() {
-		var log AuditLog
-		err := rows.Scan(
-			&log.ID,
-			&log.UserID,
-			&log.Username,
-			&log.Email,
-			&log.Action,
-			&log.ResourceType,
-			&log.ResourceID,
-			&log.Details,
-			&log.CreatedAt,
-		)
-		if err != nil {
-			return nil, err
-		}
-
-		if log.UserID == nil {
-			log.TriggerType = "system"
-			if log.Details != nil && (*log.Details != "") {
-				var detailsMap map[string]interface{}
-				if err := json.Unmarshal([]byte(*log.Details), &detailsMap); err == nil {
-					if triggerType, ok := detailsMap["trigger_type"].(string); ok {
-						log.TriggerType = triggerType
-					}
-				}
-			}
-		} else {
-			log.TriggerType = "user"
-		}
-
-		logs = append(logs, log)
-	}
-	return logs, nil
+	return logHelper(logs), nil
 }
 
 func GetAuditLogByID(id int64) (*AuditLog, error) {
-	query := `
-		SELECT 
-			al.id, 
-			al.user_id, 
-			u.username,
-			u.email,
-			al.action, 
-			al.resource_type, 
-			al.resource_id, 
-			al.details, 
-			al.created_at
-		FROM audit_logs al
-		LEFT JOIN users u ON al.user_id = u.id
-		WHERE al.id = ?
-	`
+	var logs []AuditLog
+	err := getAuditLogsQuery().
+		Where("audit_logs.id = ?", id).
+		Limit(1).
+		Scan(&logs).Error
 
-	var log AuditLog
-	err := db.QueryRow(query, id).Scan(
-		&log.ID,
-		&log.UserID,
-		&log.Username,
-		&log.Email,
-		&log.Action,
-		&log.ResourceType,
-		&log.ResourceID,
-		&log.Details,
-		&log.CreatedAt,
-	)
-
-	if err == sql.ErrNoRows {
-		return nil, nil
-	}
 	if err != nil {
 		return nil, err
 	}
-
-	if log.UserID == nil {
-		log.TriggerType = "system"
-		if log.Details != nil && (*log.Details != "") {
-			var detailsMap map[string]interface{}
-			if err := json.Unmarshal([]byte(*log.Details), &detailsMap); err == nil {
-				if triggerType, ok := detailsMap["trigger_type"].(string); ok {
-					log.TriggerType = triggerType
-				}
-			}
-		}
-	} else {
-		log.TriggerType = "user"
+	if len(logs) == 0 {
+		return nil, nil
 	}
 
-	return &log, nil
+	enrichedLogs := logHelper(logs)
+	return &enrichedLogs[0], nil
 }

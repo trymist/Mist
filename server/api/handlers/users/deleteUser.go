@@ -1,7 +1,7 @@
 package users
 
 import (
-	"database/sql"
+	"errors"
 	"net/http"
 	"strconv"
 
@@ -9,6 +9,7 @@ import (
 	"github.com/corecollectives/mist/api/middleware"
 	"github.com/corecollectives/mist/models"
 	"github.com/corecollectives/mist/store"
+	"gorm.io/gorm"
 )
 
 func DeleteUser(w http.ResponseWriter, r *http.Request) {
@@ -43,7 +44,7 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	userToDeleteRole, err := models.GetUserRole(int64(id))
-	if err == sql.ErrNoRows {
+	if errors.Is(err, gorm.ErrRecordNotFound) {
 		handlers.SendResponse(w, http.StatusNotFound, false, nil, "User not found", "No such user")
 		return
 	} else if err != nil {

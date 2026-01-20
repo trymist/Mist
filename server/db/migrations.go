@@ -1,81 +1,155 @@
 package db
 
 import (
-	"database/sql"
 	"fmt"
-	"os"
-	"path/filepath"
-	"sort"
+	"reflect"
+	"strings"
+
+	"github.com/corecollectives/mist/models"
+	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
+	"gorm.io/gorm/schema"
 )
 
-func runMigrations(db *sql.DB) error {
-	_, err := db.Exec(`
-		CREATE TABLE IF NOT EXISTS schema_migrations (
-			version TEXT PRIMARY KEY
-		);
-	`)
-	if err != nil {
-		return fmt.Errorf("failed to create schema_migrations table: %w", err)
+func migrateExistingTable(db *gorm.DB, model interface{}) error {
+	migrator := db.Migrator()
+
+	stmt := &gorm.Statement{DB: db}
+	if err := stmt.Parse(model); err != nil {
+		return fmt.Errorf("failed to parse model: %w", err)
 	}
 
-	rows, err := db.Query("SELECT version from schema_migrations")
-	if err != nil {
-		return fmt.Errorf("failed to query applied migrations: %w", err)
-	}
+	tableName := stmt.Schema.Table
 
-	appliedMigrations := make(map[string]bool)
-	for rows.Next() {
-		var version string
-		if err := rows.Scan(&version); err != nil {
-			return fmt.Errorf("failed to scan applied migration version: %w", err)
-		}
-		appliedMigrations[version] = true
-	}
-
-	migrationsDir := "db/migrations"
-	files, err := os.ReadDir(migrationsDir)
-	if err != nil {
-		return fmt.Errorf("failed to read migrations directory '%s': %w", migrationsDir, err)
-	}
-
-	sort.Slice(files, func(i, j int) bool {
-		return files[i].Name() < files[j].Name()
-	})
-
-	for _, file := range files {
-		filename := file.Name()
-		if filepath.Ext(filename) != ".sql" {
-			continue
-		}
-		if appliedMigrations[filename] {
+	for _, field := range stmt.Schema.Fields {
+		if field.DBName == "" {
 			continue
 		}
 
-		filepath := filepath.Join(migrationsDir, filename)
-		content, err := os.ReadFile(filepath)
-		if err != nil {
-			return fmt.Errorf("failed to read migration file '%s': %w", filepath, err)
-		}
+		if !migrator.HasColumn(model, field.DBName) {
+			columnType := getSQLiteColumnType(field)
+			if columnType == "" {
+				continue
+			}
 
-		tx, err := db.Begin()
-		if err != nil {
-			return fmt.Errorf("failed to begin transaction for migration '%s': %w", filename, err)
-		}
+			sql := fmt.Sprintf("ALTER TABLE `%s` ADD COLUMN `%s` %s", tableName, field.DBName, columnType)
 
-		if _, err := tx.Exec(string(content)); err != nil {
-			tx.Rollback()
-			return fmt.Errorf("failed to execute migration '%s': %w", filename, err)
-		}
+			if field.HasDefaultValue && field.DefaultValue != "" {
+				sql += fmt.Sprintf(" DEFAULT %s", field.DefaultValue)
+			}
 
-		if _, err := tx.Exec("INSERT INTO schema_migrations (version) VALUES (?)", filename); err != nil {
-			tx.Rollback()
-			return fmt.Errorf("failed to record migration '%s': %w", filename, err)
+			if err := db.Exec(sql).Error; err != nil {
+				fmt.Printf("migration.go: warning adding column %s.%s: %v\n", tableName, field.DBName, err)
+			}
 		}
-
-		if err := tx.Commit(); err != nil {
-			return fmt.Errorf("failed to commit transaction for migration '%s': %w", filename, err)
-		}
-
 	}
+
+	return nil
+}
+
+func getSQLiteColumnType(field *schema.Field) string {
+	switch field.DataType {
+	case schema.Bool:
+		return "BOOLEAN"
+	case schema.Int, schema.Uint:
+		return "INTEGER"
+	case schema.Float:
+		return "REAL"
+	case schema.String:
+		return "TEXT"
+	case schema.Time:
+		return "DATETIME"
+	case schema.Bytes:
+		return "BLOB"
+	default:
+		kind := field.FieldType.Kind()
+		if kind == reflect.Ptr {
+			kind = field.FieldType.Elem().Kind()
+		}
+		switch kind {
+		case reflect.Bool:
+			return "BOOLEAN"
+		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
+			reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+			return "INTEGER"
+		case reflect.Float32, reflect.Float64:
+			return "REAL"
+		case reflect.String:
+			return "TEXT"
+		case reflect.Struct:
+			typeName := field.FieldType.String()
+			if strings.Contains(typeName, "Time") || strings.Contains(typeName, "DeletedAt") {
+				return "DATETIME"
+			}
+			return "TEXT"
+		default:
+			return "TEXT"
+		}
+	}
+}
+
+func MigrateDB(dbInstance *gorm.DB) error {
+	return migrateDbInternal(dbInstance)
+}
+
+func migrateDbInternal(dbInstance *gorm.DB) error {
+	migrator := dbInstance.Migrator()
+
+	allModels := []interface{}{
+		&models.User{},
+		&models.ApiToken{},
+		&models.App{},
+		&models.AuditLog{},
+		&models.Backup{},
+		&models.Deployment{},
+		&models.EnvVariable{},
+		&models.GithubApp{},
+		&models.Project{},
+		&models.ProjectMember{},
+		&models.GitProvider{},
+		&models.GithubInstallation{},
+		&models.AppRepositories{},
+		&models.Domain{},
+		&models.Volume{},
+		&models.Cron{},
+		&models.Registry{},
+		&models.SystemSettingEntry{},
+		&models.Logs{},
+		&models.ServiceTemplate{},
+		&models.Session{},
+		&models.Notification{},
+		&models.UpdateLog{},
+	}
+
+	for _, model := range allModels {
+		if migrator.HasTable(model) {
+			if err := migrateExistingTable(dbInstance, model); err != nil {
+				fmt.Printf("migration.go: warning migrating existing table: %v\n", err)
+			}
+		} else {
+			if err := dbInstance.AutoMigrate(model); err != nil {
+				fmt.Printf("migration.go: error creating table: %v\n", err)
+				return err
+			}
+		}
+	}
+
+	var wildCardDomain = models.SystemSettingEntry{
+		Key:   "wildcard_domain",
+		Value: "",
+	}
+	var MistAppName = models.SystemSettingEntry{
+		Key:   "mist_app_name",
+		Value: "mist",
+	}
+	var Version = models.SystemSettingEntry{
+		Key:   "version",
+		Value: "1.0.4",
+	}
+
+	dbInstance.Clauses(clause.Insert{Modifier: "OR IGNORE"}).Create(&wildCardDomain)
+	dbInstance.Clauses(clause.Insert{Modifier: "OR IGNORE"}).Create(&MistAppName)
+	dbInstance.Clauses(clause.Insert{Modifier: "OR REPLACE"}).Create(&Version)
+
 	return nil
 }

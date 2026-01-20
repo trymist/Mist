@@ -1,7 +1,6 @@
 package projects
 
 import (
-	"database/sql"
 	"encoding/json"
 	"net/http"
 
@@ -42,12 +41,13 @@ func CreateProject(w http.ResponseWriter, r *http.Request) {
 		OwnerID: userData.ID,
 	}
 	if input.Description != "" {
-		project.Description = sql.NullString{String: input.Description, Valid: true}
+		desc := input.Description
+		project.Description = &desc
+	} else {
+		project.Description = nil
 	}
 	if input.Tags != nil {
-		for _, tag := range input.Tags {
-			project.Tags = append(project.Tags, sql.NullString{String: tag, Valid: true})
-		}
+		project.Tags = input.Tags
 	}
 	err := project.InsertInDB()
 

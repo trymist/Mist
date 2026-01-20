@@ -11,7 +11,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-func CloneRepo(appId int64, logFile *os.File) error {
+func CloneRepo(ctx context.Context, appId int64, logFile *os.File) error {
 	log.Info().Int64("app_id", appId).Msg("Starting repository clone")
 
 	userId, err := models.GetUserIDByAppID(appId)
@@ -71,7 +71,7 @@ func CloneRepo(appId int64, logFile *os.File) error {
 
 	log.Info().Str("clone_url", cloneURL).Str("branch", branch).Str("path", path).Msg("Cloning repository")
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
 	defer cancel()
 
 	// old command implementation
@@ -87,7 +87,7 @@ func CloneRepo(appId int64, logFile *os.File) error {
 	// }
 
 	// new git sdk implementation
-	err = git.CloneRepo(repoURL, branch, logFile, path)
+	err = git.CloneRepo(ctx, repoURL, branch, logFile, path)
 	if err != nil {
 		if ctx.Err() == context.DeadlineExceeded {
 			return fmt.Errorf("git clone timed out after 10 minutes")

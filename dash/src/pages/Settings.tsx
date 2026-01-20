@@ -80,7 +80,7 @@ export const SettingsPage = () => {
 
     try {
       const settings = await settingsService.updateSystemSettings({
-        wildcardDomain: wildcardDomain.trim() || null,
+        wildcardDomain: wildcardDomain.trim() || '',
         mistAppName: mistAppName.trim(),
       });
       setWildcardDomain(settings.wildcardDomain || '');

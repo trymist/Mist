@@ -1,7 +1,7 @@
 package docker
 
 import (
-	"database/sql"
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -9,9 +9,10 @@ import (
 	"github.com/corecollectives/mist/constants"
 	"github.com/corecollectives/mist/models"
 	"github.com/corecollectives/mist/utils"
+	"gorm.io/gorm"
 )
 
-func DeployerMain(Id int64, db *sql.DB, logFile *os.File, logger *utils.DeploymentLogger) (string, error) {
+func DeployerMain(ctx context.Context, Id int64, db *gorm.DB, logFile *os.File, logger *utils.DeploymentLogger) (string, error) {
 	dep, err := LoadDeployment(Id, db)
 	if err != nil {
 		logger.Error(err, "Failed to load deployment")
@@ -19,7 +20,9 @@ func DeployerMain(Id int64, db *sql.DB, logFile *os.File, logger *utils.Deployme
 	}
 
 	var appId int64
-	err = db.QueryRow("SELECT app_id FROM deployments WHERE id = ?", Id).Scan(&appId)
+	// err = db.QueryRow("SELECT app_id FROM deployments WHERE id = ?", Id).Scan(&appId)
+	err = db.Table("deployments").Select("app_id").Where("id = ?", Id).Take(&appId).Error
+
 	if err != nil {
 		logger.Error(err, "Failed to get app_id")
 		return "", fmt.Errorf("failed to get app_id: %w", err)
@@ -42,8 +45,12 @@ func DeployerMain(Id int64, db *sql.DB, logFile *os.File, logger *utils.Deployme
 	imageTag := dep.CommitHash
 	containerName := fmt.Sprintf("app-%d", app.ID)
 
-	err = DeployApp(dep, &app, appContextPath, imageTag, containerName, db, logFile, logger)
+	err = DeployApp(ctx, dep, &app, appContextPath, imageTag, containerName, db, logFile, logger)
 	if err != nil {
+		if ctx.Err() == context.Canceled {
+			logger.Info("Deployment cancelled by user")
+			return "", context.Canceled
+		}
 		logger.Error(err, "DeployApp failed")
 		dep.Status = "failed"
 		dep.Stage = "failed"
@@ -55,7 +62,6 @@ func DeployerMain(Id int64, db *sql.DB, logFile *os.File, logger *utils.Deployme
 
 	logger.Info("Deployment completed successfully")
 
-	// Run automatic cleanup if enabled in settings
 	settings, err := models.GetSystemSettings()
 	if err != nil {
 		logger.Warn(fmt.Sprintf("Failed to get system settings for cleanup: %v", err))

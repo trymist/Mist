@@ -1,8 +1,8 @@
 package applications
 
 import (
-	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -10,6 +10,7 @@ import (
 	"github.com/corecollectives/mist/api/handlers"
 	"github.com/corecollectives/mist/api/middleware"
 	"github.com/corecollectives/mist/models"
+	"gorm.io/gorm"
 )
 
 func getOutboundIP() string {
@@ -56,7 +57,7 @@ func GetPreviewURL(w http.ResponseWriter, r *http.Request) {
 
 	domain, err := models.GetPrimaryDomainByAppID(req.AppID)
 	if err != nil {
-		if err == sql.ErrNoRows || err.Error() == "sql: no rows in result set" {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			app, appErr := models.GetApplicationByID(req.AppID)
 			if appErr != nil {
 				handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to get application", appErr.Error())

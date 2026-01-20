@@ -104,7 +104,7 @@ func cleanupUpdates() error {
 			Str("version", currentVersion).
 			Msg("Completing successful update that was interrupted by service restart")
 
-		completionLog := latestLog.Logs + "\n✅ Update completed successfully (verified on restart)\n"
+		completionLog := *latestLog.Logs + "\n✅ Update completed successfully (verified on restart)\n"
 		err = models.UpdateUpdateLogStatus(latestLog.ID, "success", completionLog, nil)
 		if err != nil {
 			log.Error().Err(err).Int64("update_log_id", latestLog.ID).Msg("Failed to complete pending update")
@@ -127,7 +127,7 @@ func cleanupUpdates() error {
 		Msg("Update appears to have failed (version mismatch detected on startup)")
 
 	errMsg := "Update process was interrupted and version does not match target"
-	failureLog := latestLog.Logs + "\n❌ " + errMsg + "\n"
+	failureLog := *latestLog.Logs + "\n❌ " + errMsg + "\n"
 	err = models.UpdateUpdateLogStatus(latestLog.ID, "failed", failureLog, &errMsg)
 	if err != nil {
 		log.Error().Err(err).Int64("update_log_id", latestLog.ID).Msg("Failed to mark failed update")

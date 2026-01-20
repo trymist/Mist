@@ -1,12 +1,12 @@
 package github
 
 import (
-	"database/sql"
 	"errors"
 	"strings"
 
 	"github.com/corecollectives/mist/models"
 	"github.com/rs/zerolog/log"
+	"gorm.io/gorm"
 )
 
 func CreateDeploymentFromGithubPushEvent(evt PushEvent) (int64, error) {
@@ -58,7 +58,7 @@ func CreateDeploymentFromGithubPushEvent(evt PushEvent) (int64, error) {
 	}
 
 	dep, err := models.GetDeploymentByAppIDAndCommitHash(appID, commit)
-	if err != nil && err != sql.ErrNoRows {
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		log.Error().Err(err).
 			Int64("app_id", appID).
 			Str("commit", commit).

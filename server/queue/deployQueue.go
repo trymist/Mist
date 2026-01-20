@@ -2,11 +2,12 @@ package queue
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"sync"
 
+	"github.com/corecollectives/mist/models"
 	"github.com/rs/zerolog/log"
+	"gorm.io/gorm"
 )
 
 type Queue struct {
@@ -18,7 +19,7 @@ type Queue struct {
 
 var queue *Queue
 
-func NewQueue(buffer int, db *sql.DB) *Queue {
+func NewQueue(buffer int, db *gorm.DB) *Queue {
 	ctx, cancel := context.WithCancel(context.Background())
 	q := &Queue{
 		jobs: make(chan int64, buffer),
@@ -36,11 +37,20 @@ func GetQueue() *Queue {
 	return queue
 }
 
-func (q *Queue) StartWorker(db *sql.DB) {
+func (q *Queue) StartWorker(db *gorm.DB) {
 	q.wg.Add(1)
 	go func() {
 		defer q.wg.Done()
 		for id := range q.jobs {
+			status, err := models.GetDeploymentStatus(id)
+			if err != nil {
+				log.Error().Err(err).Msg("Failed to get deployment status")
+				continue
+			}
+			if status == "stopped" {
+				log.Info().Msgf("Deployment %d has been stopped before processing, skipping", id)
+				continue
+			}
 			q.HandleWork(id, db)
 		}
 

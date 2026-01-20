@@ -1,7 +1,5 @@
 package github
 
-import "database/sql"
-
 type PushEvent struct {
 	Ref          string      `json:"ref"`
 	Before       string      `json:"before"`
@@ -186,8 +184,8 @@ type GithubApp struct {
 
 type GithubInstallation struct {
 	InstallationID int
-	AccessToken    sql.NullString
-	TokenExpiresAt sql.NullTime
+	AccessToken    *string
+	TokenExpiresAt *string
 }
 
 type LatestCommit struct {

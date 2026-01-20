@@ -1,13 +1,14 @@
 package projects
 
 import (
-	"database/sql"
+	"errors"
 	"net/http"
 	"strconv"
 
 	"github.com/corecollectives/mist/api/handlers"
 	"github.com/corecollectives/mist/api/middleware"
 	"github.com/corecollectives/mist/models"
+	"gorm.io/gorm"
 )
 
 func DeleteProject(w http.ResponseWriter, r *http.Request) {
@@ -29,7 +30,7 @@ func DeleteProject(w http.ResponseWriter, r *http.Request) {
 	}
 
 	project, err := models.GetProjectByID(projectId)
-	if err == sql.ErrNoRows {
+	if errors.Is(err, gorm.ErrRecordNotFound) {
 		handlers.SendResponse(w, http.StatusNotFound, false, nil, "Project not found", "no project with that ID")
 		return
 	} else if err != nil {

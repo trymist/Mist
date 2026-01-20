@@ -29,7 +29,10 @@ func GenerateDynamicConfig(wildcardDomain *string, mistAppName string) error {
 	}
 
 	dynamicConfigPath := filepath.Join(TraefikConfigDir, TraefikDynamicFile)
-	content := generateDynamicYAML(wildcardDomain, mistAppName)
+	content, err := generateDynamicYAML(wildcardDomain, mistAppName)
+	if err != nil {
+		return fmt.Errorf("failed to generate dynamic YAML: %w", err)
+	}
 
 	if err := os.WriteFile(dynamicConfigPath, []byte(content), 0644); err != nil {
 		return fmt.Errorf("failed to write dynamic config: %w", err)
@@ -42,61 +45,60 @@ func GenerateDynamicConfig(wildcardDomain *string, mistAppName string) error {
 	return nil
 }
 
-func generateDynamicYAML(wildcardDomain *string, mistAppName string) string {
-	var b strings.Builder
-
-	b.WriteString(`http:
-  routers:
-`)
-
-	var mistDomain string
-	if wildcardDomain != nil && *wildcardDomain != "" {
-		domain := strings.TrimPrefix(*wildcardDomain, "*")
-		domain = strings.TrimPrefix(domain, ".")
-
-		mistDomain = mistAppName + "." + domain
-
-		b.WriteString(fmt.Sprintf(`
-    mist-dashboard:
-      rule: Host(`+"`%s`"+`)
-      entryPoints:
-        - websecure
-      service: mist-dashboard
-      tls:
-        certResolver: le
-
-    mist-dashboard-http:
-      rule: Host(`+"`%s`"+`)
-      entryPoints:
-        - web
-      middlewares:
-        - https-redirect
-      service: mist-dashboard
-`, mistDomain, mistDomain))
+func generateDynamicYAML(wildcardDomain *string, mistAppName string) ([]byte, error) {
+	cfg := map[string]any{
+		"http": map[string]any{
+			"routers":  map[string]any{},
+			"services": map[string]any{},
+			"middlewares": map[string]any{
+				"https-redirect": map[string]any{
+					"redirectScheme": map[string]any{
+						"scheme":    "https",
+						"permanent": true,
+					},
+				},
+			},
+		},
 	}
 
-	b.WriteString(`
-  services:
-`)
-
-	if mistDomain != "" {
-		b.WriteString(`
-    mist-dashboard:
-      loadBalancer:
-        servers:
-          - url: "http://172.17.0.1:8080"
-`)
+	if wildcardDomain == nil || *wildcardDomain == "" {
+		return yaml.Marshal(cfg)
 	}
 
-	b.WriteString(`
-  middlewares:
-    https-redirect:
-      redirectScheme:
-        scheme: https
-        permanent: true
-`)
+	domain := strings.TrimPrefix(*wildcardDomain, "*")
+	domain = strings.TrimPrefix(domain, ".")
+	
+	mistDomain := mistAppName + "." + domain
 
-	return b.String()
+	httpConfig := cfg["http"].(map[string]any)
+	httpConfig["routers"] = map[string]any{
+		"mist-dashboard": map[string]any{
+			"rule":        fmt.Sprintf("Host(`%s`)", mistDomain),
+			"entryPoints": []string{"websecure"},
+			"service":     "mist-dashboard",
+			"tls": map[string]any{
+				"certResolver": "le",
+			},
+		},
+		"mist-dashboard-http": map[string]any{
+			"rule":        fmt.Sprintf("Host(`%s`)", mistDomain),
+			"entryPoints": []string{"web"},
+			"middlewares": []string{"https-redirect"},
+			"service":     "mist-dashboard",
+		},
+	}
+
+	httpConfig["services"] = map[string]any{
+		"mist-dashboard": map[string]any{
+			"loadBalancer": map[string]any{
+				"servers": []map[string]any{
+					{"url": "http://172.17.0.1:8080"},
+				},
+			},
+		},
+	}
+
+	return yaml.Marshal(cfg)
 }
 
 func ChangeLetsEncryptEmail(email string) error {

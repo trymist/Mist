@@ -1,14 +1,15 @@
 package projects
 
 import (
-	"database/sql"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strconv"
 
 	"github.com/corecollectives/mist/api/handlers"
 	"github.com/corecollectives/mist/api/middleware"
 	"github.com/corecollectives/mist/models"
+	"gorm.io/gorm"
 )
 
 func UpdateMembers(w http.ResponseWriter, r *http.Request) {
@@ -38,7 +39,7 @@ func UpdateMembers(w http.ResponseWriter, r *http.Request) {
 	}
 
 	project, err := models.GetProjectByID(projectId)
-	if err == sql.ErrNoRows {
+	if errors.Is(err, gorm.ErrRecordNotFound) {
 		handlers.SendResponse(w, http.StatusNotFound, false, nil, "Project not found", "no such project")
 		return
 	} else if err != nil {

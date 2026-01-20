@@ -1,9 +1,12 @@
 package models
 
-import "database/sql"
+import (
 
-var db *sql.DB
+	"gorm.io/gorm"
+)
 
-func SetDB(database *sql.DB) {
+var db *gorm.DB
+
+func SetDB(database *gorm.DB) {
 	db = database
 }

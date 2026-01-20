@@ -1,8 +1,8 @@
 package github
 
 import (
-	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -11,6 +11,7 @@ import (
 	"github.com/corecollectives/mist/api/middleware"
 	"github.com/corecollectives/mist/github"
 	"github.com/corecollectives/mist/models"
+	"gorm.io/gorm"
 )
 
 type RepoListResponse struct {
@@ -26,7 +27,7 @@ func GetRepositories(w http.ResponseWriter, r *http.Request) {
 	}
 
 	installationID, err := models.GetInstallationID(int(userData.ID))
-	if err == sql.ErrNoRows {
+	if errors.Is(err, gorm.ErrRecordNotFound) {
 		handlers.SendResponse(w, http.StatusNotFound, false, nil, "no installation found for user", "No installation found")
 		return
 	}

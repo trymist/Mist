@@ -270,13 +270,16 @@ func ClearStuckUpdate(w http.ResponseWriter, r *http.Request) {
 
 	// Only allow clearing in_progress updates
 	if updateLog.Status != "in_progress" {
-		handlers.SendResponse(w, http.StatusBadRequest, false, nil, "Can only clear in_progress updates", "Current status: "+updateLog.Status)
+		handlers.SendResponse(w, http.StatusBadRequest, false, nil, "Can only clear in_progress updates", "Current status: "+string(updateLog.Status))
 		return
 	}
-
+	currentLogs := ""
+	if updateLog.Logs != nil {
+		currentLogs = *updateLog.Logs
+	}
 	// Mark as failed with note that it was manually cleared
 	errMsg := "Update was manually cleared by administrator"
-	clearLog := updateLog.Logs + "\n⚠️ " + errMsg + "\n"
+	clearLog := currentLogs + "\n⚠️ " + errMsg + "\n"
 	err = models.UpdateUpdateLogStatus(id, "failed", clearLog, &errMsg)
 	if err != nil {
 		log.Error().Err(err).Int64("update_log_id", id).Msg("Failed to clear stuck update")

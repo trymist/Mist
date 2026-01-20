@@ -1,26 +1,17 @@
 package docker
 
 import (
-	"database/sql"
-
 	"github.com/corecollectives/mist/models"
+	"gorm.io/gorm"
 )
 
-func LoadDeployment(depId int64, db *sql.DB) (*models.Deployment, error) {
-	row := db.QueryRow("SELECT id, app_id, commit_hash, commit_message, triggered_by, logs, status, created_at, finished_at FROM deployments WHERE id = ?", depId)
+func LoadDeployment(depId int64, db *gorm.DB) (*models.Deployment, error) {
+	// row := db.QueryRow("SELECT id, app_id, commit_hash, commit_message, triggered_by, logs, status, created_at, finished_at FROM deployments WHERE id = ?", depId)
 	dep := &models.Deployment{}
-	var triggeredBy sql.NullInt64
-	var finishedAt sql.NullTime
-	var logs sql.NullString
-	err := row.Scan(&dep.ID, &dep.AppID, &dep.CommitHash, &dep.CommitMessage, &triggeredBy, &logs, &dep.Status, &dep.CreatedAt, &finishedAt)
+	err := db.Table("deployments").Where("id=?", depId).First(&dep).Error
+
 	if err != nil {
 		return nil, err
-	}
-	if triggeredBy.Valid {
-		dep.TriggeredBy = &triggeredBy.Int64
-	}
-	if finishedAt.Valid {
-		dep.FinishedAt = &finishedAt.Time
 	}
 	return dep, nil
 

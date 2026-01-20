@@ -219,6 +219,8 @@ export const useDeploymentMonitor = ({
         progress: deployment.progress,
         message: deployment.status === 'success'
           ? 'Deployment completed successfully'
+          : deployment.status === 'stopped'
+          ? 'Deployment was stopped by user'
           : 'Deployment failed',
         error_message: deployment.error_message,
         duration: deployment.duration,
@@ -226,6 +228,8 @@ export const useDeploymentMonitor = ({
 
       if (deployment.status === 'failed' && deployment.error_message) {
         setError(deployment.error_message);
+      } else if (deployment.status === 'stopped') {
+        setError('Deployment was stopped by user');
       }
 
       setIsLoading(false);
@@ -302,6 +306,13 @@ export const useDeploymentMonitor = ({
                 setError(statusData.error_message);
                 onError?.(statusData.error_message);
               }
+
+              // Handle stopped status
+              if (statusData.status === 'stopped' && !hasCompletedRef.current) {
+                console.log('[DeploymentMonitor] Deployment stopped by user');
+                hasCompletedRef.current = true;
+                setError('Deployment was stopped by user');
+              }
               break;
             }
 
@@ -335,8 +346,8 @@ export const useDeploymentMonitor = ({
 
         // Check the current status from state to decide on reconnection
         setStatus((currentStatus) => {
-          // Don't reconnect if deployment is complete
-          if (currentStatus?.status === 'success' || currentStatus?.status === 'failed') {
+          // Don't reconnect if deployment is complete (success, failed, or stopped)
+          if (currentStatus?.status === 'success' || currentStatus?.status === 'failed' || currentStatus?.status === 'stopped') {
             console.log('[DeploymentMonitor] Deployment complete, not reconnecting');
             return currentStatus;
           }

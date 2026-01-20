@@ -1,8 +1,8 @@
 package auth
 
 import (
-	"database/sql"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strings"
 
@@ -10,6 +10,7 @@ import (
 	"github.com/corecollectives/mist/api/middleware"
 	"github.com/corecollectives/mist/models"
 	"github.com/rs/zerolog/log"
+	"gorm.io/gorm"
 )
 
 func LoginHandler(w http.ResponseWriter, r *http.Request) {
@@ -28,7 +29,7 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	user, err := models.GetUserByEmail(cred.Email)
-	if err == sql.ErrNoRows {
+	if errors.Is(err, gorm.ErrRecordNotFound) {
 		handlers.SendResponse(w, http.StatusUnauthorized, false, nil, "Invalid email or password", "Unauthorized")
 		return
 	} else if err != nil {

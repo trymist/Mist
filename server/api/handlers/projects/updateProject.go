@@ -1,14 +1,15 @@
 package projects
 
 import (
-	"database/sql"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strconv"
 
 	"github.com/corecollectives/mist/api/handlers"
 	"github.com/corecollectives/mist/api/middleware"
 	"github.com/corecollectives/mist/models"
+	"gorm.io/gorm"
 )
 
 func UpdateProject(w http.ResponseWriter, r *http.Request) {
@@ -44,7 +45,7 @@ func UpdateProject(w http.ResponseWriter, r *http.Request) {
 	}
 
 	existingProject, err := models.GetProjectByID(projectId)
-	if err == sql.ErrNoRows {
+	if errors.Is(err, gorm.ErrRecordNotFound) {
 		handlers.SendResponse(w, http.StatusNotFound, false, nil, "Project not found", "no such project")
 		return
 	} else if err != nil {
@@ -57,19 +58,23 @@ func UpdateProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tags := make([]sql.NullString, len(input.Tags))
-	for i, tag := range input.Tags {
-		tags[i] = sql.NullString{
-			String: tag,
-			Valid:  true,
-		}
+	// tags := make([]string, len(input.Tags))
+	// for i, tag := range input.Tags {
+	// 	tags[i] = tag
+	// }
+	var desc *string
+	if input.Description != "" {
+		desc = &input.Description
+
+	} else {
+		desc = nil
 	}
 
 	project := &models.Project{
 		ID:          projectId,
 		Name:        input.Name,
-		Description: sql.NullString{String: input.Description, Valid: input.Description != ""},
-		Tags:        tags,
+		Description: desc,
+		Tags:        input.Tags,
 	}
 
 	err = models.UpdateProject(project)

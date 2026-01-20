@@ -1,13 +1,14 @@
 package users
 
 import (
-	"database/sql"
+	"errors"
 	"net/http"
 	"strconv"
 
 	"github.com/corecollectives/mist/api/handlers"
 	"github.com/corecollectives/mist/api/middleware"
 	"github.com/corecollectives/mist/models"
+	"gorm.io/gorm"
 )
 
 func GetUserById(w http.ResponseWriter, r *http.Request) {
@@ -30,7 +31,7 @@ func GetUserById(w http.ResponseWriter, r *http.Request) {
 	}
 	user, err := models.GetUserByID(userID)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			handlers.SendResponse(w, http.StatusNotFound, false, nil, "User not found", "No user exists with the given ID")
 			return
 		}

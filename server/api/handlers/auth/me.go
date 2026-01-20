@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"database/sql"
 	"errors"
 	"net/http"
 
@@ -9,6 +8,7 @@ import (
 	"github.com/corecollectives/mist/api/middleware"
 	"github.com/corecollectives/mist/models"
 	"github.com/corecollectives/mist/store"
+	"gorm.io/gorm"
 )
 
 func MeHandler(w http.ResponseWriter, r *http.Request) {
@@ -29,7 +29,7 @@ func MeHandler(w http.ResponseWriter, r *http.Request) {
 
 	userId := claims.UserID
 	user, err := models.GetUserByID(userId)
-	if errors.Is(err, sql.ErrNoRows) {
+	if errors.Is(err, gorm.ErrRecordNotFound) {
 		handlers.SendResponse(w, http.StatusOK, true, map[string]interface{}{"setupRequired": setupRequired, "user": nil}, "User not found", "")
 		return
 	} else if err != nil {

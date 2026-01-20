@@ -1,8 +1,10 @@
 package queue
 
-import "database/sql"
+import (
+	"gorm.io/gorm"
+)
 
-func InitQueue(db *sql.DB) *Queue {
+func InitQueue(db *gorm.DB) *Queue {
 	q := NewQueue(5, db)
 	return q
 }

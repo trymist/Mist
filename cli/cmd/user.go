@@ -128,7 +128,6 @@ func changePassword(args []string) {
 }
 
 func listUsers(args []string) {
-	// Initialize database
 	if err := initDB(); err != nil {
 		fmt.Printf("Error: %v\n", err)
 		os.Exit(1)
