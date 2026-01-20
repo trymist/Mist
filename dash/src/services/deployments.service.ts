@@ -68,4 +68,21 @@ export const deploymentsService = {
     const host = window.location.host;
     return `${protocol}//${host}${API_BASE}/deployments/logs/stream?id=${deploymentId}`;
   },
+
+  /**
+   * Stop a deployment
+   */
+  async stopDeployment(deploymentId: number): Promise<void> {
+    const response = await fetch(`${API_BASE}/deployments/stopDep`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ deploymentId }),
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || data.error || 'Failed to stop deployment');
+    }
+  },
 };

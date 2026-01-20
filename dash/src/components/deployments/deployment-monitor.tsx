@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Sheet,
   SheetContent,
@@ -6,8 +6,10 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet';
 import { Badge } from '@/components/ui/badge';
-import { Terminal, CheckCircle2, XCircle, AlertCircle, Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Terminal, CheckCircle2, XCircle, AlertCircle, Loader2, Square } from 'lucide-react';
 import { useDeploymentMonitor } from '@/hooks';
+import { deploymentsService } from '@/services';
 import { LogLine } from '@/components/logs/log-line';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -23,6 +25,7 @@ export const DeploymentMonitor = ({ deploymentId, open, onClose, onComplete }: P
   const bottomRef = useRef<HTMLDivElement>(null);
 
   const completedRef = useRef(false);
+  const [stopping, setStopping] = useState(false);
 
   const { logs, status, error, isConnected, isLoading, isLive, reset } = useDeploymentMonitor({
     deploymentId,
@@ -50,6 +53,20 @@ export const DeploymentMonitor = ({ deploymentId, open, onClose, onComplete }: P
     completedRef.current = false;
     reset();
     onClose();
+  };
+
+  const handleStop = async () => {
+    if (stopping) return;
+    try {
+      setStopping(true);
+      await deploymentsService.stopDeployment(deploymentId);
+      toast.success('Deployment stopped');
+    } catch (err) {
+      console.error('Stop deployment error:', err);
+      toast.error(err instanceof Error ? err.message : 'Failed to stop deployment');
+    } finally {
+      setStopping(false);
+    }
   };
 
   const getStatusInfo = () => {
@@ -91,6 +108,11 @@ export const DeploymentMonitor = ({ deploymentId, open, onClose, onComplete }: P
     }
   };
 
+  const canStop = () => {
+    const statusValue = status?.status || 'pending';
+    return ['pending', 'building', 'deploying', 'cloning'].includes(statusValue);
+  };
+
   const statusInfo = getStatusInfo();
 
   return (
@@ -127,6 +149,24 @@ export const DeploymentMonitor = ({ deploymentId, open, onClose, onComplete }: P
             <Badge variant="outline" className="font-mono text-xs px-2 py-0.5">
               #{deploymentId}
             </Badge>
+
+            {/* Stop Button */}
+            {canStop() && (
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={handleStop}
+                disabled={stopping}
+                className="flex items-center gap-1.5"
+              >
+                {stopping ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Square className="h-3.5 w-3.5" />
+                )}
+                Stop
+              </Button>
+            )}
           </div>
         </SheetHeader>
 

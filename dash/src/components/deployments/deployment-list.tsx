@@ -5,13 +5,14 @@ import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
 import { DeploymentMonitor } from "@/components/deployments"
 import type { Deployment, App } from "@/types"
-import { Loader2, Clock, CheckCircle2, XCircle, PlayCircle, AlertCircle } from "lucide-react"
+import { Loader2, Clock, CheckCircle2, XCircle, PlayCircle, AlertCircle, Square } from "lucide-react"
 import { deploymentsService } from "@/services"
 
 export const DeploymentsTab = ({ appId, app }: { appId: number; app?: App }) => {
   const [deployments, setDeployments] = useState<Deployment[]>([])
   const [loading, setLoading] = useState(true)
   const [deploying, setDeploying] = useState(false)
+  const [stoppingIds, setStoppingIds] = useState<Set<number>>(new Set())
   const [selectedDeployment, setSelectedDeployment] = useState<number | null>(null)
 
   const fetchDeployments = async () => {
@@ -49,6 +50,25 @@ export const DeploymentsTab = ({ appId, app }: { appId: number; app?: App }) => 
   const handleDeploymentComplete = () => {
     toast.success('Deployment completed successfully!')
     fetchDeployments()
+  }
+
+  const handleStop = async (deploymentId: number) => {
+    if (stoppingIds.has(deploymentId)) return
+    try {
+      setStoppingIds(prev => new Set(prev).add(deploymentId))
+      await deploymentsService.stopDeployment(deploymentId)
+      toast.success('Deployment stopped')
+      fetchDeployments()
+    } catch (error) {
+      console.error('Stop deployment error:', error)
+      toast.error(error instanceof Error ? error.message : 'Failed to stop deployment')
+    } finally {
+      setStoppingIds(prev => {
+        const next = new Set(prev)
+        next.delete(deploymentId)
+        return next
+      })
+    }
   }
 
   useEffect(() => {
@@ -97,6 +117,10 @@ export const DeploymentsTab = ({ appId, app }: { appId: number; app?: App }) => 
       default:
         return <Badge variant="outline">{status}</Badge>
     }
+  }
+
+  const canStopDeployment = (deployment: Deployment) => {
+    return ['pending', 'building', 'deploying', 'cloning'].includes(deployment.status)
   }
 
   return (
@@ -226,14 +250,32 @@ export const DeploymentsTab = ({ appId, app }: { appId: number; app?: App }) => 
                     </div>
                   </div>
 
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setSelectedDeployment(d.id)}
-                    className="w-full sm:w-auto sm:ml-4"
-                  >
-                    View Logs
-                  </Button>
+                  <div className="flex gap-2">
+                    {canStopDeployment(d) && (
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => handleStop(d.id)}
+                        disabled={stoppingIds.has(d.id)}
+                        className="flex items-center gap-1.5"
+                      >
+                        {stoppingIds.has(d.id) ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <Square className="h-3.5 w-3.5" />
+                        )}
+                        Stop
+                      </Button>
+                    )}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setSelectedDeployment(d.id)}
+                      className="flex items-center gap-1.5"
+                    >
+                      View Logs
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>
