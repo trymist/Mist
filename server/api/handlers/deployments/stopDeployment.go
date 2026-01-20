@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	"github.com/corecollectives/mist/api/handlers"
+	"github.com/corecollectives/mist/api/middleware"
 	"github.com/corecollectives/mist/constants"
 	"github.com/corecollectives/mist/models"
 	"github.com/corecollectives/mist/queue"
@@ -23,6 +24,13 @@ func StopDeployment(w http.ResponseWriter, r *http.Request) {
 		handlers.SendResponse(w, http.StatusMethodNotAllowed, false, nil, "Method not allowed", "Only POST method is allowed")
 		return
 	}
+
+	userInfo, ok := middleware.GetUser(r)
+	if !ok {
+		handlers.SendResponse(w, http.StatusUnauthorized, false, nil, "Not logged in", "Unauthorized")
+		return
+	}
+
 	var req stopDeployment
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		handlers.SendResponse(w, http.StatusBadRequest, false, nil, "Invalid request body", "Could not parse JSON")
@@ -68,6 +76,12 @@ func StopDeployment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Info().Int64("deployment_id", req.DeploymentID).Bool("was_running", wasRunning).Msg("Deployment stopped successfully")
+	models.LogUserAudit(userInfo.ID, "stop", "deployment", &req.DeploymentID, map[string]interface{}{
+		"app_id":      deployment.AppID,
+		"commit_hash": deployment.CommitHash,
+		"was_running": wasRunning,
+	})
+
+	log.Info().Int64("deployment_id", req.DeploymentID).Int64("user_id", userInfo.ID).Bool("was_running", wasRunning).Msg("Deployment stopped successfully")
 	handlers.SendResponse(w, http.StatusOK, true, nil, message, "")
 }
