@@ -41,7 +41,7 @@ func DeployerMain(ctx context.Context, Id int64, db *gorm.DB, logFile *os.File, 
 		"app_type":   app.AppType,
 	})
 
-	appContextPath := filepath.Join(constants.Constants["RootPath"].(string), fmt.Sprintf("projects/%d/apps/%s", app.ProjectID, app.Name))
+	appContextPath := filepath.Join(constants.Constants["RootPath"].(string), fmt.Sprintf("projects/%d/apps/%s/%s", app.ProjectID, app.Name, app.RootDirectory))
 	imageTag := dep.CommitHash
 	containerName := fmt.Sprintf("app-%d", app.ID)
 
