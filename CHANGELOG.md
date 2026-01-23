@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 The format is based on Keep a Changelog,
 and this project adheres to Semantic Versioning.
 
+## [1.0.4] - 2026-01-20
+
+### Added 
+- stop ongoing deployment
+- DB tests
+
+### Fixed
+- update environment variable issue
+
+### Changed
+- switched to gorm
+
+--- 
+
 ## [1.0.3] - 2026-01-12
 
 ### Added
