@@ -265,6 +265,73 @@ export const AppInfo = ({ app, latestCommit }: Props) => {
                 </InfoItem>
               )}
             </>
+          ) : app.appType === 'compose' ? (
+            <>
+              <SectionDivider title="Repository & Configuration" />
+
+              {/* Git Repository */}
+              <InfoItem icon={Github} label="Repository">
+                {app.gitRepository ? (
+                  <a
+                    href={`https://github.com/${app.gitRepository}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-mono text-xs text-primary hover:underline flex items-center gap-2 group w-fit"
+                  >
+                    <span className="truncate">{app.gitRepository}</span>
+                    <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-all group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                  </a>
+                ) : (
+                  <p className="text-muted-foreground text-xs">Not connected</p>
+                )}
+              </InfoItem>
+
+              {/* Branch */}
+              <InfoItem icon={GitBranch} label="Branch">
+                <Badge variant="outline" className="font-mono text-xs px-3 py-1">
+                  {app.gitBranch || "Not specified"}
+                </Badge>
+              </InfoItem>
+
+              {/* Latest Commit */}
+              {latestCommit && (
+                <>
+                  <SectionDivider title="Latest Commit" />
+
+                  <div className="md:col-span-2">
+                    <InfoItem icon={GitCommit} label="Commit Details">
+                      <div className="space-y-2 p-3 rounded-lg bg-muted/30 border border-border/50">
+                        <div className="flex items-center gap-3 flex-wrap">
+                          <a
+                            href={latestCommit.html_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="font-mono text-xs text-primary hover:underline inline-flex items-center gap-1.5 group"
+                          >
+                            <span className="font-semibold">{latestCommit.sha.slice(0, 7)}</span>
+                            <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-all group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                          </a>
+                          {latestCommit.author && (
+                            <span className="text-xs text-muted-foreground">
+                              by {latestCommit.author}
+                            </span>
+                          )}
+                          {latestCommit.timestamp && (
+                            <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                              <Clock className="w-3 h-3" />
+                              {new Date(latestCommit.timestamp).toLocaleString()}
+                            </span>
+                          )}
+                        </div>
+                        {latestCommit.message && (
+                          <p className="text-xs text-foreground/80 leading-relaxed">{latestCommit.message}</p>
+                        )}
+                      </div>
+                    </InfoItem>
+                  </div>
+                </>
+              )}
+            </>
           ) : (
             <>
               {/* Git Configuration Section */}

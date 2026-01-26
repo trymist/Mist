@@ -245,14 +245,15 @@ func GetDeploymentConfig(deploymentID int64, app *models.App, db *gorm.DB) (int,
 		return 0, nil, nil, fmt.Errorf("get app ID failed: %w", err)
 	}
 
-	var port int
+	var port *int
 	err = db.Model(&models.App{}).Select("port").Where("id = ?", appID).Scan(&port).Error
 	if err != nil {
 		return 0, nil, nil, fmt.Errorf("get port failed: %w", err)
 	}
 
-	if port == 0 {
-		port = 3000
+	finalPort := 3000
+	if port != nil {
+		finalPort = *port
 	}
 
 	domains, err := models.GetDomainsByAppID(appID)
@@ -288,7 +289,7 @@ func GetDeploymentConfig(deploymentID int64, app *models.App, db *gorm.DB) (int,
 		envMap[env.Key] = env.Value
 	}
 
-	return port, domainStrings, envMap, nil
+	return finalPort, domainStrings, envMap, nil
 }
 
 // package docker

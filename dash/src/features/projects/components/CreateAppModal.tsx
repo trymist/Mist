@@ -9,6 +9,7 @@ import { AppTypeSelection } from "./AppTypeSelection";
 import { WebAppForm } from "./WebAppForm";
 import { ServiceForm } from "./ServiceForm";
 import { DatabaseForm } from "./DatabaseForm";
+import { ComposeAppForm } from "./ComposeAppForm";
 import type { AppType, CreateAppRequest } from "@/types/app";
 
 interface CreateAppModalProps {
@@ -81,6 +82,14 @@ export function CreateAppModal({
 
         {step === "configure" && selectedType === "database" && (
           <DatabaseForm
+            projectId={projectId}
+            onSubmit={handleSubmit}
+            onBack={handleBack}
+          />
+        )}
+
+        {step === "configure" && selectedType === "compose" && (
+          <ComposeAppForm
             projectId={projectId}
             onSubmit={handleSubmit}
             onBack={handleBack}

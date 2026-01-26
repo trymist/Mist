@@ -1,11 +1,13 @@
 package websockets
 
 import (
+	"bufio"
 	"context"
 	"encoding/binary"
 	"fmt"
 	"io"
 	"net/http"
+	"os/exec"
 	"strconv"
 	"time"
 
@@ -58,48 +60,60 @@ func ContainerLogsHandler(w http.ResponseWriter, r *http.Request) {
 
 	containerName := docker.GetContainerName(app.Name, appID)
 
-	if !docker.ContainerExists(containerName) {
+	if app.AppType != models.AppTypeCompose {
+		if !docker.ContainerExists(containerName) {
+			conn.WriteJSON(ContainerLogsEvent{
+				Type:      "error",
+				Timestamp: time.Now().Format(time.RFC3339),
+				Data: map[string]interface{}{
+					"message": "Container not found",
+				},
+			})
+			return
+		}
+
+		status, err := docker.GetContainerStatus(containerName)
+		if err != nil {
+			conn.WriteJSON(ContainerLogsEvent{
+				Type:      "error",
+				Timestamp: time.Now().Format(time.RFC3339),
+				Data: map[string]interface{}{
+					"message": fmt.Sprintf("Failed to get container status: %v", err),
+				},
+			})
+			return
+		}
+
 		conn.WriteJSON(ContainerLogsEvent{
-			Type:      "error",
+			Type:      "status",
 			Timestamp: time.Now().Format(time.RFC3339),
 			Data: map[string]interface{}{
-				"message": "Container not found",
+				"container": containerName,
+				"state":     status.State,
+				"status":    status.Status,
 			},
 		})
-		return
-	}
 
-	status, err := docker.GetContainerStatus(containerName)
-	if err != nil {
+		if status.State != "running" {
+			conn.WriteJSON(ContainerLogsEvent{
+				Type:      "error",
+				Timestamp: time.Now().Format(time.RFC3339),
+				Data: map[string]interface{}{
+					"message": fmt.Sprintf("Container is not running (state: %s)", status.State),
+				},
+			})
+			return
+		}
+	} else {
 		conn.WriteJSON(ContainerLogsEvent{
-			Type:      "error",
+			Type:      "status",
 			Timestamp: time.Now().Format(time.RFC3339),
 			Data: map[string]interface{}{
-				"message": fmt.Sprintf("Failed to get container status: %v", err),
+				"container": app.Name,
+				"state":     "running",
+				"status":    "Compose Stack",
 			},
 		})
-		return
-	}
-
-	conn.WriteJSON(ContainerLogsEvent{
-		Type:      "status",
-		Timestamp: time.Now().Format(time.RFC3339),
-		Data: map[string]interface{}{
-			"container": containerName,
-			"state":     status.State,
-			"status":    status.Status,
-		},
-	})
-
-	if status.State != "running" {
-		conn.WriteJSON(ContainerLogsEvent{
-			Type:      "error",
-			Timestamp: time.Now().Format(time.RFC3339),
-			Data: map[string]interface{}{
-				"message": fmt.Sprintf("Container is not running (state: %s)", status.State),
-			},
-		})
-		return
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -116,6 +130,52 @@ func ContainerLogsHandler(w http.ResponseWriter, r *http.Request) {
 	go func() {
 		defer close(logChan)
 
+		if app.AppType == models.AppTypeCompose {
+			// Streaming for Compose Apps
+			path := fmt.Sprintf("/var/lib/mist/projects/%d/apps/%s", app.ProjectID, app.Name)
+			cmd := exec.CommandContext(ctx, "docker", "compose", "logs", "--follow", "--tail", "100")
+			cmd.Dir = path
+
+			stdout, err := cmd.StdoutPipe()
+			if err != nil {
+				errChan <- fmt.Errorf("failed to get stdout pipe: %w", err)
+				return
+			}
+			stderr, err := cmd.StderrPipe()
+			if err != nil {
+				errChan <- fmt.Errorf("failed to get stderr pipe: %w", err)
+				return
+			}
+
+			if err := cmd.Start(); err != nil {
+				errChan <- fmt.Errorf("failed to start compose logs: %w", err)
+				return
+			}
+
+			readStream := func(r io.Reader, streamType string) {
+				scanner := bufio.NewScanner(r)
+				for scanner.Scan() {
+					select {
+					case <-ctx.Done():
+						return
+					case logChan <- logMessage{line: scanner.Text(), streamType: streamType}:
+					}
+				}
+				if err := scanner.Err(); err != nil && err != io.EOF {
+				}
+			}
+
+			go readStream(stdout, "stdout")
+			go readStream(stderr, "stderr")
+
+			if err := cmd.Wait(); err != nil {
+				if ctx.Err() == nil {
+				}
+			}
+			return
+		}
+
+		// Standard Docker Container Streaming
 		cli, err := client.New(client.FromEnv)
 		if err != nil {
 			errChan <- fmt.Errorf("failed to create docker client: %w", err)

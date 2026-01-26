@@ -1,4 +1,4 @@
-import { Globe, Cog, Database } from "lucide-react";
+import { Globe, Cog, Database, Container } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import type { AppType } from "@/types/app";
 
@@ -28,6 +28,13 @@ export function AppTypeSelection({ onSelect }: AppTypeSelectionProps) {
       title: "Database / Service",
       description: "Pre-configured databases and services deployed from official Docker images",
       examples: "PostgreSQL, Redis, MySQL, MongoDB, RabbitMQ",
+    },
+    {
+      type: "compose" as AppType,
+      icon: Container,
+      title: "Docker Compose",
+      description: "Deploy complex multi-container applications using docker-compose",
+      examples: "Full stack apps, microservices",
     },
   ];
 
