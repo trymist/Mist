@@ -6,7 +6,7 @@ import (
 	"os/exec"
 )
 
-func ComposeUp(appContextPath string, env map[string]string, logFile *os.File) {
+func ComposeUp(appContextPath string, env map[string]string, logFile *os.File) error {
 	cmd := exec.Command("docker", "compose", "up", "-d")
 	var envArray []string
 	for k, v := range env {
@@ -16,5 +16,5 @@ func ComposeUp(appContextPath string, env map[string]string, logFile *os.File) {
 	cmd.Dir = appContextPath
 	cmd.Stdout = logFile
 	cmd.Stderr = logFile
-	cmd.Run()
+	return cmd.Run()
 }

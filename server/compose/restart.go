@@ -5,10 +5,10 @@ import (
 	"os/exec"
 )
 
-func ComposeRestart(appContextPath string) {
+func ComposeRestart(appContextPath string) error {
 	cmd := exec.Command("docker", "compose", "restart")
 	cmd.Dir = appContextPath
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	cmd.Run()
+	return cmd.Run()
 }

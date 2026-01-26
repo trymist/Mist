@@ -5,12 +5,10 @@ import (
 	"os/exec"
 )
 
-func ComposeDown(appContextPath string) {
+func ComposeDown(appContextPath string) error {
 	cmd := exec.Command("docker", "compose", "down")
 	cmd.Dir = appContextPath
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	cmd.Run()
-
+	return cmd.Run()
 }
-
