@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Trash2, Plus, Pencil, X, Check, FileText, Info } from "lucide-react";
+import { Trash2, Plus, Pencil, X, Check, FileText, Info, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import { useEnvironmentVariables } from "@/hooks";
 import type { EnvVariable } from "@/types";
@@ -30,6 +30,9 @@ export const EnvironmentVariables = ({ appId }: EnvironmentVariablesProps) => {
   const [bulkText, setBulkText] = useState("");
   const [parsedVars, setParsedVars] = useState<Array<{ key: string; value: string }>>([]);
   const [isAdding, setIsAdding] = useState(false);
+  const [showNewValue, setShowNewValue] = useState(false);
+  const [showEditValue, setShowEditValue] = useState(false);
+  const [visibleVarIds, setVisibleVarIds] = useState<Set<number>>(new Set());
 
   const parseEnvText = (text: string) => {
     const lines = text.split('\n').filter(line => line.trim());
@@ -87,6 +90,7 @@ export const EnvironmentVariables = ({ appId }: EnvironmentVariablesProps) => {
     if (result) {
       setNewKey("");
       setNewValue("");
+      setShowNewValue(false);
       setShowAddForm(false);
     }
   };
@@ -150,12 +154,25 @@ export const EnvironmentVariables = ({ appId }: EnvironmentVariablesProps) => {
     setEditingId(env.id);
     setEditKey(env.key);
     setEditValue(env.value);
+    setShowEditValue(false);
   };
 
   const cancelEdit = () => {
     setEditingId(null);
     setEditKey("");
     setEditValue("");
+  };
+
+  const toggleVisibility = (id: number) => {
+    setVisibleVarIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
   };
 
   if (loading) {
@@ -234,13 +251,29 @@ export const EnvironmentVariables = ({ appId }: EnvironmentVariablesProps) => {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="new-value">Value</Label>
-                    <Input
-                      id="new-value"
-                      placeholder="your-api-key-value"
-                      value={newValue}
-                      onChange={(e) => setNewValue(e.target.value)}
-                      type="password"
-                    />
+                    <div className="relative">
+                      <Input
+                        id="new-value"
+                        placeholder="your-api-key-value"
+                        value={newValue}
+                        onChange={(e) => setNewValue(e.target.value)}
+                        type={showNewValue ? "text" : "password"}
+                        className="pr-10"
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                        onClick={() => setShowNewValue(!showNewValue)}
+                      >
+                        {showNewValue ? (
+                          <EyeOff className="h-4 w-4 text-muted-foreground" />
+                        ) : (
+                          <Eye className="h-4 w-4 text-muted-foreground" />
+                        )}
+                      </Button>
+                    </div>
                   </div>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-2">
@@ -349,12 +382,28 @@ export const EnvironmentVariables = ({ appId }: EnvironmentVariablesProps) => {
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor={`edit-value-${env.id}`}>Value</Label>
-                        <Input
-                          id={`edit-value-${env.id}`}
-                          value={editValue}
-                          onChange={(e) => setEditValue(e.target.value)}
-                          type="password"
-                        />
+                        <div className="relative">
+                          <Input
+                            id={`edit-value-${env.id}`}
+                            value={editValue}
+                            onChange={(e) => setEditValue(e.target.value)}
+                            type={showEditValue ? "text" : "password"}
+                            className="pr-10"
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                            onClick={() => setShowEditValue(!showEditValue)}
+                          >
+                            {showEditValue ? (
+                              <EyeOff className="h-4 w-4 text-muted-foreground" />
+                            ) : (
+                              <Eye className="h-4 w-4 text-muted-foreground" />
+                            )}
+                          </Button>
+                        </div>
                       </div>
                     </div>
                     <div className="flex flex-col sm:flex-row gap-2">
@@ -370,10 +419,24 @@ export const EnvironmentVariables = ({ appId }: EnvironmentVariablesProps) => {
                   </div>
                 ) : (
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                    <div className="flex-1 font-mono break-all">
+                    <div className="flex-1 font-mono break-all flex items-center gap-2">
                       <span className="font-semibold">{env.key}</span>
-                      <span className="text-muted-foreground ml-2">=</span>
-                      <span className="ml-2 text-muted-foreground">••••••••</span>
+                      <span className="text-muted-foreground">=</span>
+                      <span className="text-muted-foreground">
+                        {visibleVarIds.has(env.id) ? env.value : "••••••••"}
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6"
+                        onClick={() => toggleVisibility(env.id)}
+                      >
+                        {visibleVarIds.has(env.id) ? (
+                          <EyeOff className="h-3 w-3" />
+                        ) : (
+                          <Eye className="h-3 w-3" />
+                        )}
+                      </Button>
                     </div>
                     <div className="flex gap-2 self-end sm:self-auto">
                       <Button
