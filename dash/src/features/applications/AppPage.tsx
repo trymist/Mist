@@ -7,6 +7,7 @@ import { useApplication } from "@/hooks";
 import { TabsList, Tabs, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { AppInfo, GitProviderTab, EnvironmentVariables, Domains, AppSettings, LiveLogsViewer, AppStats, Volumes, ContainerStats } from "@/components/applications";
 import { DeploymentsTab } from "@/components/deployments";
+import { ComposeAppPage } from "./ComposeAppPage";
 
 
 export const AppPage = () => {
@@ -67,6 +68,10 @@ export const AppPage = () => {
 
   if (!app) return null;
 
+  if (app.appType === 'compose') {
+    return <ComposeAppPage />;
+  }
+
   return (
     <div className="flex flex-col min-h-screen bg-background">
       {/* Header */}
@@ -91,14 +96,14 @@ export const AppPage = () => {
         <Tabs defaultValue="info" className="w-full" onValueChange={setActiveTab}>
           <div className="w-full overflow-x-auto mb-6 pb-1">
             <TabsList className="inline-flex w-full min-w-fit">
-            <TabsTrigger value="info">Info</TabsTrigger>
-            {app.appType !== 'database' && <TabsTrigger value="git">Git</TabsTrigger>}
-            <TabsTrigger value="environment">Environment</TabsTrigger>
-            {app.appType === 'web' && <TabsTrigger value="domains">Domains</TabsTrigger>}
-            <TabsTrigger value="deployments">Deployments</TabsTrigger>
-            <TabsTrigger value="stats">Stats</TabsTrigger>
-            <TabsTrigger value="logs">Logs</TabsTrigger>
-            <TabsTrigger value="settings">Settings</TabsTrigger>
+              <TabsTrigger value="info">Info</TabsTrigger>
+              {app.appType !== 'database' && <TabsTrigger value="git">Git</TabsTrigger>}
+              <TabsTrigger value="environment">Environment</TabsTrigger>
+              {app.appType === 'web' && <TabsTrigger value="domains">Domains</TabsTrigger>}
+              <TabsTrigger value="deployments">Deployments</TabsTrigger>
+              <TabsTrigger value="stats">Stats</TabsTrigger>
+              <TabsTrigger value="logs">Logs</TabsTrigger>
+              <TabsTrigger value="settings">Settings</TabsTrigger>
             </TabsList>
           </div>
 
