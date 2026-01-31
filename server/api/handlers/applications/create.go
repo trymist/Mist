@@ -44,8 +44,8 @@ func CreateApplication(w http.ResponseWriter, r *http.Request) {
 		req.AppType = "web"
 	}
 
-	if req.AppType != "web" && req.AppType != "service" && req.AppType != "database" {
-		handlers.SendResponse(w, http.StatusBadRequest, false, nil, "Invalid app type", "Must be 'web', 'service', or 'database'")
+	if req.AppType != "web" && req.AppType != "service" && req.AppType != "database" && req.AppType != "compose" {
+		handlers.SendResponse(w, http.StatusBadRequest, false, nil, "Invalid app type", "Must be 'web', 'service', 'database', or 'compose'")
 		return
 	}
 
@@ -116,17 +116,13 @@ func CreateApplication(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Auto-generate domain if wildcard domain is configured (only for web apps)
 	if req.AppType == "web" {
 		project, err := models.GetProjectByID(req.ProjectID)
 		if err == nil {
 			autoDomain, err := models.GenerateAutoDomain(project.Name, app.Name)
 			if err == nil && autoDomain != "" {
-				// Create the auto-generated domain
 				_, err = models.CreateDomain(app.ID, autoDomain)
 				if err != nil {
-					// Log the error but don't fail the app creation
-					// The user can manually add domains later
 				}
 			}
 		}

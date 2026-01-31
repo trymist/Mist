@@ -1,4 +1,4 @@
-export type AppType = 'web' | 'service' | 'database';
+export type AppType = 'web' | 'service' | 'database' | 'compose';
 
 export type RestartPolicy = 'no' | 'always' | 'on-failure' | 'unless-stopped';
 

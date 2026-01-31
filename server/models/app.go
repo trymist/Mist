@@ -25,6 +25,7 @@ const (
 	AppTypeWeb      AppType = "web"
 	AppTypeService  AppType = "service"
 	AppTypeDatabase AppType = "database"
+	AppTypeCompose  AppType = "compose"
 
 	RestartPolicyNo            RestartPolicy = "no"
 	RestartPolicyAlways        RestartPolicy = "always"

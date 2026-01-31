@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/corecollectives/mist/compose"
 	"github.com/corecollectives/mist/docker"
 	"github.com/corecollectives/mist/fs"
 	"github.com/corecollectives/mist/git"
@@ -105,7 +106,12 @@ func (q *Queue) HandleWork(id int64, db *gorm.DB) {
 		logger.Info("Skipping git clone for database app")
 	}
 
-	_, err = docker.DeployerMain(ctx, id, db, logFile, logger)
+	if app.AppType == models.AppTypeCompose {
+		path := fmt.Sprintf("/var/lib/mist/projects/%d/apps/%s", app.ProjectID, app.Name)
+		err = compose.DeployComposeApp(ctx, dep, app, path, db, logFile, logger)
+	} else {
+		_, err = docker.DeployerMain(ctx, id, db, logFile, logger)
+	}
 	if err != nil {
 		if ctx.Err() == context.Canceled {
 			logger.Info("Deployment cancelled by user")

@@ -1,11 +1,13 @@
 package applications
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 
 	"github.com/corecollectives/mist/api/handlers"
 	"github.com/corecollectives/mist/api/middleware"
+	"github.com/corecollectives/mist/compose"
 	"github.com/corecollectives/mist/docker"
 	"github.com/corecollectives/mist/models"
 )
@@ -44,10 +46,18 @@ func StopContainerHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	containerName := docker.GetContainerName(app.Name, appId)
+	// containerName declaration moved after check
 
-	if err := docker.StopContainer(containerName); err != nil {
-		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to stop container", err.Error())
+	if app.AppType == models.AppTypeCompose {
+		path := fmt.Sprintf("/var/lib/mist/projects/%d/apps/%s", app.ProjectID, app.Name)
+		err = compose.ComposeDown(path)
+	} else {
+		containerName := docker.GetContainerName(app.Name, appId)
+		err = docker.StopContainer(containerName)
+	}
+
+	if err != nil {
+		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to stop application", err.Error())
 		return
 	}
 
@@ -57,14 +67,20 @@ func StopContainerHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	containerName := ""
+	if app.AppType != models.AppTypeCompose {
+		containerName = docker.GetContainerName(app.Name, appId)
+	}
+
 	models.LogUserAudit(userInfo.ID, "stop", "container", &appId, map[string]interface{}{
 		"app_name":       app.Name,
 		"container_name": containerName,
+		"app_type":       app.AppType,
 	})
 
 	handlers.SendResponse(w, http.StatusOK, true, map[string]any{
-		"message": "Container stopped successfully",
-	}, "Container stopped successfully", "")
+		"message": "Application stopped successfully",
+	}, "Application stopped successfully", "")
 }
 
 func StartContainerHandler(w http.ResponseWriter, r *http.Request) {
@@ -101,10 +117,22 @@ func StartContainerHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	containerName := docker.GetContainerName(app.Name, appId)
+	var startErr error
+	if app.AppType == models.AppTypeCompose {
+		path := fmt.Sprintf("/var/lib/mist/projects/%d/apps/%s", app.ProjectID, app.Name)
+		envVars, _ := models.GetEnvVariablesByAppID(appId)
+		envMap := make(map[string]string)
+		for _, e := range envVars {
+			envMap[e.Key] = e.Value
+		}
+		startErr = compose.ComposeUp(path, envMap, nil)
+	} else {
+		containerName := docker.GetContainerName(app.Name, appId)
+		startErr = docker.StartContainer(containerName)
+	}
 
-	if err := docker.StartContainer(containerName); err != nil {
-		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to start container", err.Error())
+	if startErr != nil {
+		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to start application", startErr.Error())
 		return
 	}
 
@@ -114,14 +142,20 @@ func StartContainerHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	containerName := ""
+	if app.AppType != models.AppTypeCompose {
+		containerName = docker.GetContainerName(app.Name, appId)
+	}
+
 	models.LogUserAudit(userInfo.ID, "start", "container", &appId, map[string]interface{}{
 		"app_name":       app.Name,
 		"container_name": containerName,
+		"app_type":       app.AppType,
 	})
 
 	handlers.SendResponse(w, http.StatusOK, true, map[string]any{
-		"message": "Container started successfully",
-	}, "Container started successfully", "")
+		"message": "Application started successfully",
+	}, "Application started successfully", "")
 }
 
 func RestartContainerHandler(w http.ResponseWriter, r *http.Request) {
@@ -158,10 +192,17 @@ func RestartContainerHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	containerName := docker.GetContainerName(app.Name, appId)
+	var restartErr error
+	if app.AppType == models.AppTypeCompose {
+		path := fmt.Sprintf("/var/lib/mist/projects/%d/apps/%s", app.ProjectID, app.Name)
+		restartErr = compose.ComposeRestart(path)
+	} else {
+		containerName := docker.GetContainerName(app.Name, appId)
+		restartErr = docker.RestartContainer(containerName)
+	}
 
-	if err := docker.RestartContainer(containerName); err != nil {
-		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to restart container", err.Error())
+	if restartErr != nil {
+		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to restart application", restartErr.Error())
 		return
 	}
 
@@ -171,14 +212,20 @@ func RestartContainerHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	containerName := ""
+	if app.AppType != models.AppTypeCompose {
+		containerName = docker.GetContainerName(app.Name, appId)
+	}
+
 	models.LogUserAudit(userInfo.ID, "restart", "container", &appId, map[string]interface{}{
 		"app_name":       app.Name,
 		"container_name": containerName,
+		"app_type":       app.AppType,
 	})
 
 	handlers.SendResponse(w, http.StatusOK, true, map[string]any{
-		"message": "Container restarted successfully",
-	}, "Container restarted successfully", "")
+		"message": "Application restarted successfully",
+	}, "Application restarted successfully", "")
 }
 
 func GetContainerStatusHandler(w http.ResponseWriter, r *http.Request) {
@@ -215,8 +262,26 @@ func GetContainerStatusHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	containerName := docker.GetContainerName(app.Name, appId)
+	// containerName declaration moved
 
+	if app.AppType == models.AppTypeCompose {
+		path := fmt.Sprintf("/var/lib/mist/projects/%d/apps/%s", app.ProjectID, app.Name)
+		status, err := compose.GetComposeStatus(path, app.Name)
+		if err != nil {
+			// If error, maybe it's just not running or folder doesn't exist
+			handlers.SendResponse(w, http.StatusOK, true, map[string]interface{}{
+				"name":   app.Name,
+				"status": "Unknown",
+				"state":  "stopped",
+				"error":  err.Error(),
+			}, "Compose status retrieval failed (app might be stopped)", "")
+			return
+		}
+		handlers.SendResponse(w, http.StatusOK, true, status, "Compose status retrieved successfully", "")
+		return
+	}
+
+	containerName := docker.GetContainerName(app.Name, appId)
 	status, err := docker.GetContainerStatus(containerName)
 	if err != nil {
 		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to get container status", err.Error())
@@ -265,6 +330,19 @@ func GetContainerLogsHandler(w http.ResponseWriter, r *http.Request) {
 	app, err := models.GetApplicationByID(appId)
 	if err != nil {
 		handlers.SendResponse(w, http.StatusNotFound, false, nil, "Application not found", err.Error())
+		return
+	}
+
+	if app.AppType == models.AppTypeCompose {
+		path := fmt.Sprintf("/var/lib/mist/projects/%d/apps/%s", app.ProjectID, app.Name)
+		logs, err := compose.GetComposeLogs(path, tail)
+		if err != nil {
+			handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to get compose logs", err.Error())
+			return
+		}
+		handlers.SendResponse(w, http.StatusOK, true, map[string]any{
+			"logs": logs,
+		}, "Compose logs retrieved successfully", "")
 		return
 	}
 
