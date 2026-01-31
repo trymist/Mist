@@ -25,6 +25,7 @@ const (
 	AppTypeWeb      AppType = "web"
 	AppTypeService  AppType = "service"
 	AppTypeDatabase AppType = "database"
+	AppTypeCompose  AppType = "compose"
 
 	RestartPolicyNo            RestartPolicy = "no"
 	RestartPolicyAlways        RestartPolicy = "always"
@@ -276,4 +277,48 @@ func GetAppCloneURL(appID int64, userID int64) (string, string, bool, error) {
 	}
 
 	return "", "", false, fmt.Errorf("app has no git repository or clone URL configured")
+}
+
+func GetCloneUrlfromAppID(appID int64) (*string, error) {
+	var URL string
+	if err := db.Model(&App{}).Select("git_clone_url").Where("id = ?", appID).Take(&URL).Error; err != nil {
+		fmt.Printf(err.Error(), "eror getting clone git_clone_url")
+		return nil, err
+	}
+	return &URL, nil
+}
+
+func GetGitProviderNameByAppID(
+	appID int64,
+) (*GitProviderType, error) {
+
+	var app struct {
+		GitProviderID *int64
+	}
+
+	if err := db.
+		Model(&App{}).
+		Select("git_provider_id").
+		Where("id = ?", appID).
+		Take(&app).Error; err != nil {
+		return nil, err
+	}
+
+	if app.GitProviderID == nil {
+		return nil, nil
+	}
+
+	var result struct {
+		Provider GitProviderType `gorm:"column:provider"`
+	}
+
+	if err := db.
+		Model(&GitProvider{}).
+		Select("provider").
+		Where("id = ?", *app.GitProviderID).
+		Take(&result).Error; err != nil {
+		return nil, err
+	}
+
+	return &result.Provider, nil
 }

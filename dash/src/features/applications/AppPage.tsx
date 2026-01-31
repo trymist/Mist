@@ -7,6 +7,7 @@ import { useApplication } from "@/hooks";
 import { TabsList, Tabs, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { AppInfo, GitProviderTab, EnvironmentVariables, Domains, AppSettings, LiveLogsViewer, AppStats, Volumes, ContainerStats } from "@/components/applications";
 import { DeploymentsTab } from "@/components/deployments";
+import { ComposeAppPage } from "./ComposeAppPage";
 
 
 export const AppPage = () => {
@@ -67,6 +68,10 @@ export const AppPage = () => {
 
   if (!app) return null;
 
+  if (app.appType === 'compose') {
+    return <ComposeAppPage />;
+  }
+
   return (
     <div className="flex flex-col min-h-screen bg-background">
       {/* Header */}
@@ -91,19 +96,19 @@ export const AppPage = () => {
         <Tabs defaultValue="info" className="w-full" onValueChange={setActiveTab}>
           <div className="w-full overflow-x-auto mb-6 pb-1">
             <TabsList className="inline-flex w-full min-w-fit">
-            <TabsTrigger value="info">Info</TabsTrigger>
-            {app.appType !== 'database' && <TabsTrigger value="git">Git</TabsTrigger>}
-            <TabsTrigger value="environment">Environment</TabsTrigger>
-            {app.appType === 'web' && <TabsTrigger value="domains">Domains</TabsTrigger>}
-            <TabsTrigger value="deployments">Deployments</TabsTrigger>
-            <TabsTrigger value="stats">Stats</TabsTrigger>
-            <TabsTrigger value="logs">Logs</TabsTrigger>
-            <TabsTrigger value="settings">Settings</TabsTrigger>
-            </TabsList>
-          </div>
+              <TabsTrigger value="info">Info</TabsTrigger>
+              {app.appType !== 'database' && <TabsTrigger value="sources">Sources</TabsTrigger>}
+              <TabsTrigger value="environment">Environment</TabsTrigger>
+              {app.appType === 'web' && <TabsTrigger value="domains">Domains</TabsTrigger>}
+              <TabsTrigger value="deployments">Deployments</TabsTrigger>
+              <TabsTrigger value="stats">Stats</TabsTrigger>
+              <TabsTrigger value="logs">Logs</TabsTrigger>
+              <TabsTrigger value="settings">Settings</TabsTrigger>
+            </TabsList >
+          </div >
 
           {/* ✅ INFO TAB */}
-          <TabsContent value="info" className="space-y-6">
+          < TabsContent value="info" className="space-y-6" >
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
               <div className="xl:col-span-2">
                 <AppInfo app={app} latestCommit={latestCommit} />
@@ -112,13 +117,15 @@ export const AppPage = () => {
                 <AppStats appId={app.id} appStatus={app.status} app={app} previewUrl={previewUrl} onStatusChange={refreshApp} />
               </div>
             </div>
-          </TabsContent>
+          </TabsContent >
 
-          {app.appType !== 'database' && (
-            <TabsContent value="git" className="space-y-6">
-              <GitProviderTab app={app} />
-            </TabsContent>
-          )}
+          {
+            app.appType !== 'database' && (
+              <TabsContent value="sources" className="space-y-6">
+                <GitProviderTab app={app} />
+              </TabsContent>
+            )
+          }
 
           {/* ✅ ENVIRONMENT TAB */}
           <TabsContent value="environment" className="space-y-6">
@@ -126,11 +133,13 @@ export const AppPage = () => {
           </TabsContent>
 
           {/* ✅ DOMAINS TAB */}
-          {app.appType === 'web' && (
-            <TabsContent value="domains" className="space-y-6">
-              <Domains appId={app.id} />
-            </TabsContent>
-          )}
+          {
+            app.appType === 'web' && (
+              <TabsContent value="domains" className="space-y-6">
+                <Domains appId={app.id} />
+              </TabsContent>
+            )
+          }
 
           {/* ✅ DEPLOYMENTS TAB */}
           <TabsContent value="deployments">
@@ -150,20 +159,21 @@ export const AppPage = () => {
             <AppSettings app={app} onUpdate={refreshApp} />
             <Volumes appId={app.id} appType={app.appType} />
           </TabsContent>
-        </Tabs>
-      </main>
+        </Tabs >
+      </main >
 
       {/* Edit Modal */}
-      <FormModal
+      < FormModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         title="Edit App"
-        fields={[
-          { label: "App Name", name: "name", type: "text", defaultValue: app.name },
-          { label: "Description", name: "description", type: "textarea", defaultValue: app.description || "" },
-        ]}
+        fields={
+          [
+            { label: "App Name", name: "name", type: "text", defaultValue: app.name },
+            { label: "Description", name: "description", type: "textarea", defaultValue: app.description || "" },
+          ]}
         onSubmit={(data) => handleUpdateApp(data as { name: string; description: string })}
       />
-    </div>
+    </div >
   );
 };

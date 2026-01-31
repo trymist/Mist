@@ -6,7 +6,7 @@ import (
 
 	"github.com/corecollectives/mist/api/handlers"
 	"github.com/corecollectives/mist/api/middleware"
-	"github.com/corecollectives/mist/github"
+	"github.com/corecollectives/mist/git"
 	"github.com/corecollectives/mist/models"
 )
 
@@ -56,7 +56,7 @@ func GetLatestCommit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	commit, err := github.GetLatestCommit(req.AppID, userInfo.ID)
+	commit, err := git.GetLatestCommit(req.AppID, userInfo.ID)
 	if err != nil {
 		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to get latest commit", err.Error())
 		return

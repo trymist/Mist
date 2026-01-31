@@ -17,7 +17,7 @@ import (
 	"github.com/corecollectives/mist/models"
 )
 
-func GetLatestCommit(appID, userID int64) (*LatestCommit, error) {
+func GetLatestCommit(appID, userID int64) (*models.LatestCommit, error) {
 	repoName, branch, err := models.GetAppRepoAndBranch(appID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch app repo: %w", err)
@@ -74,7 +74,7 @@ func GetLatestCommit(appID, userID int64) (*LatestCommit, error) {
 		return nil, fmt.Errorf("failed to decode GitHub response: %w", err)
 	}
 
-	return &LatestCommit{
+	return &models.LatestCommit{
 		SHA:     data.SHA,
 		Message: data.Commit.Message,
 		URL:     data.HTMLURL,

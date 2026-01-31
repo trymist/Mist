@@ -4,9 +4,10 @@ import { Label } from "@/components/ui/label"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import { toast } from "sonner"
 import type { App } from "@/types/app"
-import { Github } from "lucide-react"
+import { Github, GitBranch } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 
 interface GitProviderTabProps {
@@ -30,6 +31,11 @@ export const GitProviderTab = ({ app }: GitProviderTabProps) => {
   const [selectedBranch, setSelectedBranch] = useState(app.gitBranch || "")
   const [isRepoLoading, setIsRepoLoading] = useState(true)
   const [isBranchLoading, setIsBranchLoading] = useState(false)
+
+  // Public Git state
+  const [publicGitUrl, setPublicGitUrl] = useState(app.gitCloneUrl || "")
+  const [publicGitBranch, setPublicGitBranch] = useState(app.gitBranch || "main")
+  const [isSavingPublicGit, setIsSavingPublicGit] = useState(false)
 
   // this is for github app fetching
   // FIX: name of this function should be changed
@@ -149,6 +155,38 @@ export const GitProviderTab = ({ app }: GitProviderTabProps) => {
     }
   }
 
+  const savePublicGitConfig = async () => {
+    if (!publicGitUrl.trim()) {
+      toast.error("Please enter a Git URL")
+      return
+    }
+
+    try {
+      setIsSavingPublicGit(true)
+      const res = await fetch("/api/apps/update", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          appId: app.id,
+          gitProviderId: null,
+          gitRepository: null,
+          gitBranch: publicGitBranch || "main",
+          gitCloneUrl: publicGitUrl.trim(),
+        }),
+      })
+
+      const data = await res.json()
+      if (!data.success) throw new Error(data.error)
+
+      toast.success("Public Git configuration saved")
+    } catch {
+      toast.error("Failed to save configuration")
+    } finally {
+      setIsSavingPublicGit(false)
+    }
+  }
+
   return (
     <Tabs defaultValue="github" value={provider} onValueChange={setProvider} className="w-full space-y-8">
 
@@ -158,6 +196,11 @@ export const GitProviderTab = ({ app }: GitProviderTabProps) => {
           <TabsTrigger value="github" className="flex items-center gap-2">
             <Github className="h-4 w-4" />
             GitHub
+          </TabsTrigger>
+
+          <TabsTrigger value="public-git" className="flex items-center gap-2">
+            <GitBranch className="h-4 w-4" />
+            Public Git
           </TabsTrigger>
 
           {/* <TabsTrigger value="gitlab" disabled className="flex items-center gap-2 opacity-70"> */}
@@ -296,6 +339,52 @@ export const GitProviderTab = ({ app }: GitProviderTabProps) => {
             </CardContent>
           </Card>
         )}
+      </TabsContent>
+
+      {/* ✅ PUBLIC GIT TAB CONTENT */}
+      <TabsContent value="public-git">
+        <Card>
+          <CardHeader>
+            <CardTitle>Public Git Repository</CardTitle>
+            <CardDescription>
+              Deploy from any public Git repository by providing the URL and branch.
+            </CardDescription>
+          </CardHeader>
+
+          <CardContent className="space-y-6">
+            <div className="flex flex-col md:flex-row gap-6">
+              <div className="flex-1">
+                <Label className="text-muted-foreground">Git URL</Label>
+                <Input
+                  className="mt-2"
+                  placeholder="https://github.com/user/repo.git"
+                  value={publicGitUrl}
+                  onChange={(e) => setPublicGitUrl(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Enter the full clone URL of your public repository
+                </p>
+              </div>
+
+              <div className="flex-1">
+                <Label className="text-muted-foreground">Branch</Label>
+                <Input
+                  className="mt-2"
+                  placeholder="main"
+                  value={publicGitBranch}
+                  onChange={(e) => setPublicGitBranch(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  The branch to deploy from (default: main)
+                </p>
+              </div>
+            </div>
+
+            <Button onClick={savePublicGitConfig} disabled={isSavingPublicGit} className="w-fit">
+              {isSavingPublicGit ? "Saving..." : "Save Configuration"}
+            </Button>
+          </CardContent>
+        </Card>
       </TabsContent>
 
       {/* ✅ OTHER PROVIDERS (Disabled) */}
