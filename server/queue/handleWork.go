@@ -8,7 +8,7 @@ import (
 	"github.com/corecollectives/mist/compose"
 	"github.com/corecollectives/mist/docker"
 	"github.com/corecollectives/mist/fs"
-	"github.com/corecollectives/mist/github"
+	"github.com/corecollectives/mist/git"
 	"github.com/corecollectives/mist/models"
 	"github.com/corecollectives/mist/utils"
 	"gorm.io/gorm"
@@ -86,7 +86,7 @@ func (q *Queue) HandleWork(id int64, db *gorm.DB) {
 		logger.Info("Cloning repository")
 		models.UpdateDeploymentStatus(id, "cloning", "cloning", 20, nil)
 
-		err = github.CloneRepo(ctx, appId, logFile)
+		err = git.CloneRepo(ctx, appId, logFile)
 		if err != nil {
 			if ctx.Err() == context.Canceled {
 				logger.Info("Deployment cancelled by user")
@@ -97,6 +97,7 @@ func (q *Queue) HandleWork(id int64, db *gorm.DB) {
 			logger.Error(err, "Failed to clone repository")
 			errMsg := fmt.Sprintf("Failed to clone repository: %v", err)
 			models.UpdateDeploymentStatus(id, "failed", "failed", 0, &errMsg)
+			fmt.Fprint(logFile, "error cloning repository: ", err.Error())
 			return
 		}
 
@@ -121,6 +122,7 @@ func (q *Queue) HandleWork(id int64, db *gorm.DB) {
 		logger.Error(err, "Deployment failed")
 		errMsg := fmt.Sprintf("Deployment failed: %v", err)
 		models.UpdateDeploymentStatus(id, "failed", "failed", 0, &errMsg)
+		fmt.Fprint(logFile, "error deploying docker: ", err.Error())
 		return
 	}
 
