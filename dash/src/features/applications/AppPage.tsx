@@ -91,14 +91,14 @@ export const AppPage = () => {
         <Tabs defaultValue="info" className="w-full" onValueChange={setActiveTab}>
           <div className="w-full overflow-x-auto mb-6 pb-1">
             <TabsList className="inline-flex w-full min-w-fit">
-            <TabsTrigger value="info">Info</TabsTrigger>
-            {app.appType !== 'database' && <TabsTrigger value="git">Git</TabsTrigger>}
-            <TabsTrigger value="environment">Environment</TabsTrigger>
-            {app.appType === 'web' && <TabsTrigger value="domains">Domains</TabsTrigger>}
-            <TabsTrigger value="deployments">Deployments</TabsTrigger>
-            <TabsTrigger value="stats">Stats</TabsTrigger>
-            <TabsTrigger value="logs">Logs</TabsTrigger>
-            <TabsTrigger value="settings">Settings</TabsTrigger>
+              <TabsTrigger value="info">Info</TabsTrigger>
+              {app.appType !== 'database' && <TabsTrigger value="sources">Sources</TabsTrigger>}
+              <TabsTrigger value="environment">Environment</TabsTrigger>
+              {app.appType === 'web' && <TabsTrigger value="domains">Domains</TabsTrigger>}
+              <TabsTrigger value="deployments">Deployments</TabsTrigger>
+              <TabsTrigger value="stats">Stats</TabsTrigger>
+              <TabsTrigger value="logs">Logs</TabsTrigger>
+              <TabsTrigger value="settings">Settings</TabsTrigger>
             </TabsList>
           </div>
 
@@ -115,7 +115,7 @@ export const AppPage = () => {
           </TabsContent>
 
           {app.appType !== 'database' && (
-            <TabsContent value="git" className="space-y-6">
+            <TabsContent value="sources" className="space-y-6">
               <GitProviderTab app={app} />
             </TabsContent>
           )}

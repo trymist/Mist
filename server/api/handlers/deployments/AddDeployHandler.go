@@ -6,7 +6,7 @@ import (
 
 	"github.com/corecollectives/mist/api/handlers"
 	"github.com/corecollectives/mist/api/middleware"
-	"github.com/corecollectives/mist/github"
+	"github.com/corecollectives/mist/git"
 	"github.com/corecollectives/mist/models"
 	"github.com/corecollectives/mist/queue"
 	"github.com/rs/zerolog/log"
@@ -39,7 +39,7 @@ func AddDeployHandler(w http.ResponseWriter, r *http.Request) {
 
 	if app.AppType != models.AppTypeDatabase {
 		userId := int64(user.ID)
-		commit, err := github.GetLatestCommit(int64(req.AppId), userId)
+		commit, err := git.GetLatestCommit(int64(req.AppId), userId)
 		if err != nil {
 			log.Error().Err(err).Int("app_id", req.AppId).Msg("Error getting latest commit")
 			handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "failed to get latest commit", err.Error())
