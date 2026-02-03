@@ -102,7 +102,28 @@ func RestartContainer(containerName string) error {
 		}
 		return fmt.Errorf("failed to restart container: %w", err)
 	}
-	return nil
+
+	// Wait for container to be fully running
+	pollCtx, pollCancel := context.WithTimeout(context.Background(), 1*time.Minute)
+	defer pollCancel()
+
+	ticker := time.NewTicker(500 * time.Millisecond)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-pollCtx.Done():
+			return fmt.Errorf("container %s restart command completed but container did not reach running state within timeout", containerName)
+		case <-ticker.C:
+			inspectResult, err := cli.ContainerInspect(ctx, containerName, client.ContainerInspectOptions{})
+			if err != nil {
+				continue
+			}
+			if inspectResult.Container.State != nil && inspectResult.Container.State.Running {
+				return nil
+			}
+		}
+	}
 
 	// legacy exec method
 	//
@@ -323,6 +344,44 @@ func RunContainer(ctx context.Context, app *models.App, imageTag, containerName 
 			labels[fmt.Sprintf("traefik.http.routers.%s-http.middlewares", containerName)] = fmt.Sprintf("%s-https-redirect", containerName)
 			labels[fmt.Sprintf("traefik.http.middlewares.%s-https-redirect.redirectscheme.scheme", containerName)] = "https"
 		} else {
+			shouldExpose := app.ShouldExpose != nil && *app.ShouldExpose
+
+			if shouldExpose {
+				exposePort := Port
+				if app.ExposePort != nil && *app.ExposePort > 0 {
+					exposePort = int(*app.ExposePort)
+				}
+
+				port, err := network.ParsePort(fmt.Sprintf("%d/tcp", Port))
+				if err != nil {
+					return fmt.Errorf("failed to parse port: %w", err)
+				}
+				hostIP, err := netip.ParseAddr("0.0.0.0")
+				if err != nil {
+					return fmt.Errorf("failed to parse host IP: %w", err)
+				}
+				exposedPorts[port] = struct{}{}
+				portBindings[port] = []network.PortBinding{
+					{
+						HostIP:   hostIP,
+						HostPort: fmt.Sprintf("%d", exposePort),
+					},
+				}
+			}
+			networkMode = "traefik-net"
+		}
+
+	case models.AppTypeService, models.AppTypeDatabase:
+		networkMode = "traefik-net"
+
+		shouldExpose := app.ShouldExpose != nil && *app.ShouldExpose
+
+		if shouldExpose {
+			exposePort := Port
+			if app.ExposePort != nil && *app.ExposePort > 0 {
+				exposePort = int(*app.ExposePort)
+			}
+
 			port, err := network.ParsePort(fmt.Sprintf("%d/tcp", Port))
 			if err != nil {
 				return fmt.Errorf("failed to parse port: %w", err)
@@ -335,32 +394,37 @@ func RunContainer(ctx context.Context, app *models.App, imageTag, containerName 
 			portBindings[port] = []network.PortBinding{
 				{
 					HostIP:   hostIP,
-					HostPort: fmt.Sprintf("%d", Port),
+					HostPort: fmt.Sprintf("%d", exposePort),
 				},
 			}
 		}
 
-	case models.AppTypeService:
-		networkMode = "traefik-net"
-
-	case models.AppTypeDatabase:
-		networkMode = "traefik-net"
-
 	default:
-		port, err := network.ParsePort(fmt.Sprintf("%d/tcp", Port))
-		if err != nil {
-			return fmt.Errorf("failed to parse port: %w", err)
-		}
-		hostIP, err := netip.ParseAddr("0.0.0.0")
-		if err != nil {
-			return fmt.Errorf("failed to parse host IP: %w", err)
-		}
-		exposedPorts[port] = struct{}{}
-		portBindings[port] = []network.PortBinding{
-			{
-				HostIP:   hostIP,
-				HostPort: fmt.Sprintf("%d", Port),
-			},
+		networkMode = "traefik-net"
+
+		shouldExpose := app.ShouldExpose != nil && *app.ShouldExpose
+
+		if shouldExpose && app.AppType != models.AppTypeCompose {
+			exposePort := Port
+			if app.ExposePort != nil && *app.ExposePort > 0 {
+				exposePort = int(*app.ExposePort)
+			}
+
+			port, err := network.ParsePort(fmt.Sprintf("%d/tcp", Port))
+			if err != nil {
+				return fmt.Errorf("failed to parse port: %w", err)
+			}
+			hostIP, err := netip.ParseAddr("0.0.0.0")
+			if err != nil {
+				return fmt.Errorf("failed to parse host IP: %w", err)
+			}
+			exposedPorts[port] = struct{}{}
+			portBindings[port] = []network.PortBinding{
+				{
+					HostIP:   hostIP,
+					HostPort: fmt.Sprintf("%d", exposePort),
+				},
+			}
 		}
 	}
 

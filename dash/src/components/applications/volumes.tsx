@@ -3,7 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Trash2, Plus, Pencil, X, Check, HardDrive, Info } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Trash2, Plus, Pencil, X, Check, HardDrive, Info, AlertTriangle, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { applicationsService } from "@/services";
 import type { Volume, CreateVolumeRequest, UpdateVolumeRequest } from "@/types";
@@ -32,6 +33,7 @@ export const Volumes = ({ appId, appType }: VolumesProps) => {
   const [editContainerPath, setEditContainerPath] = useState("");
   const [editReadOnly, setEditReadOnly] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [actionDialogOpen, setActionDialogOpen] = useState(false);
 
   const dbVolumePaths: Record<string, string> = {
     postgres: "/var/lib/postgresql/data",
@@ -56,6 +58,30 @@ export const Volumes = ({ appId, appType }: VolumesProps) => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const showRestartDialog = () => {
+    setActionDialogOpen(true);
+  };
+
+  const [isRestarting, setIsRestarting] = useState(false);
+
+  const handleRestart = async () => {
+    try {
+      setIsRestarting(true);
+      await applicationsService.recreateContainer(appId);
+      toast.success("Container recreated successfully - volume changes applied");
+      setActionDialogOpen(false);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to recreate container");
+    } finally {
+      setIsRestarting(false);
+    }
+  };
+
+  const handleSkipRestart = () => {
+    setActionDialogOpen(false);
+    toast.info("Volume changes will take effect on next restart or redeployment");
   };
 
   const handleAdd = async (e: React.FormEvent) => {
@@ -83,6 +109,8 @@ export const Volumes = ({ appId, appType }: VolumesProps) => {
       setNewReadOnly(false);
       setShowAddForm(false);
       loadVolumes();
+      // Show restart dialog since volumes require container recreation
+      showRestartDialog();
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to create volume";
       toast.error(message);
@@ -126,6 +154,8 @@ export const Volumes = ({ appId, appType }: VolumesProps) => {
       toast.success("Volume updated successfully");
       cancelEdit();
       loadVolumes();
+      // Show restart dialog since volumes require container recreation
+      showRestartDialog();
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to update volume";
       toast.error(message);
@@ -143,6 +173,8 @@ export const Volumes = ({ appId, appType }: VolumesProps) => {
       await applicationsService.deleteVolume(volumeId);
       toast.success("Volume deleted successfully");
       loadVolumes();
+      // Show restart dialog since volumes require container recreation
+      showRestartDialog();
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to delete volume";
       toast.error(message);
@@ -386,6 +418,32 @@ export const Volumes = ({ appId, appType }: VolumesProps) => {
           </>
         )}
       </CardContent>
+
+      {/* Restart Dialog */}
+      <Dialog open={actionDialogOpen} onOpenChange={(open) => !isRestarting && setActionDialogOpen(open)}>
+        <DialogContent onPointerDownOutside={(e) => isRestarting && e.preventDefault()}>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-yellow-500" />
+              Restart Required
+            </DialogTitle>
+            <DialogDescription>
+              {isRestarting 
+                ? "Restarting container, please wait..." 
+                : "Volume changes require restarting the container to take effect. Would you like to restart now?"}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex gap-2 sm:justify-end">
+            <Button variant="outline" onClick={handleSkipRestart} disabled={isRestarting}>
+              Skip for Now
+            </Button>
+            <Button onClick={handleRestart} disabled={isRestarting} className="flex items-center gap-2">
+              <RefreshCw className={`h-4 w-4 ${isRestarting ? 'animate-spin' : ''}`} />
+              {isRestarting ? 'Restarting...' : 'Restart Now'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 };

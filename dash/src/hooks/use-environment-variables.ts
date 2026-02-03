@@ -44,9 +44,13 @@ export const useEnvironmentVariables = (options: UseEnvironmentVariablesOptions)
 
   const createEnvVar = useCallback(async (key: string, value: string): Promise<EnvVariable | null> => {
     try {
-      const envVar = await applicationsService.createEnvVariable({ appId, key, value });
-      setEnvVars(prev => [...prev, envVar]);
-      toast.success('Environment variable added');
+      const response = await applicationsService.createEnvVariable({ appId, key, value });
+      // The backend now returns { envVariable, actionRequired, actionMessage }
+      const envVar = response?.envVariable || response;
+      if (envVar) {
+        setEnvVars(prev => [...prev, envVar]);
+        toast.success('Environment variable added');
+      }
       return envVar;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to add environment variable';
@@ -57,9 +61,13 @@ export const useEnvironmentVariables = (options: UseEnvironmentVariablesOptions)
 
   const updateEnvVar = useCallback(async (id: number, key: string, value: string): Promise<EnvVariable | null> => {
     try {
-      const updatedVar = await applicationsService.updateEnvVariable({ id, key, value });
-      setEnvVars(prev => prev.map(v => v.id === id ? updatedVar : v));
-      toast.success('Environment variable updated');
+      const response = await applicationsService.updateEnvVariable({ id, key, value });
+      // The backend now returns { envVariable, actionRequired, actionMessage }
+      const updatedVar = response?.envVariable || response;
+      if (updatedVar) {
+        setEnvVars(prev => prev.map(v => v.id === id ? updatedVar : v));
+        toast.success('Environment variable updated');
+      }
       return updatedVar;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to update environment variable';

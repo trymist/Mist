@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -31,6 +32,8 @@ export function DatabaseForm({ projectId, onSubmit, onBack }: DatabaseFormProps)
   const [formData, setFormData] = useState({
     name: "",
     password: "",
+    shouldExpose: false,
+    exposePort: undefined as number | undefined,
   });
 
   useEffect(() => {
@@ -67,6 +70,8 @@ export function DatabaseForm({ projectId, onSubmit, onBack }: DatabaseFormProps)
     setFormData({
       name: template.name,
       password: "",
+      shouldExpose: false,
+      exposePort: undefined,
     });
     generatePassword();
   };
@@ -101,6 +106,8 @@ export function DatabaseForm({ projectId, onSubmit, onBack }: DatabaseFormProps)
       templateName: selectedTemplate.name,
       name: formData.name,
       port: selectedTemplate.defaultPort,
+      shouldExpose: formData.shouldExpose,
+      exposePort: formData.exposePort,
       envVars,
     });
   };
@@ -260,6 +267,50 @@ export function DatabaseForm({ projectId, onSubmit, onBack }: DatabaseFormProps)
           <p className="text-xs text-muted-foreground mt-1">
             Password will be stored as environment variable
           </p>
+        </div>
+
+        <div className="p-4 border rounded-lg bg-muted/30 space-y-4">
+          <div className="flex items-start space-x-3">
+            <Checkbox
+              id="shouldExpose"
+              checked={formData.shouldExpose}
+              onCheckedChange={(checked) =>
+                setFormData({ ...formData, shouldExpose: checked as boolean })
+              }
+            />
+            <div className="space-y-1">
+              <Label htmlFor="shouldExpose" className="font-medium cursor-pointer">
+                Expose External Port
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                When enabled, exposes the database on an external port accessible via IP:port.
+                Use with caution - databases should typically not be exposed publicly.
+              </p>
+            </div>
+          </div>
+
+          {formData.shouldExpose && (
+            <div className="pl-7 space-y-2">
+              <Label htmlFor="exposePort">External Port *</Label>
+              <Input
+                id="exposePort"
+                type="number"
+                value={formData.exposePort || ""}
+                onChange={(e) => {
+                  const value = e.target.value ? parseInt(e.target.value) : undefined;
+                  setFormData({ ...formData, exposePort: value });
+                }}
+                placeholder={selectedTemplate?.defaultPort.toString()}
+                required
+                min={1}
+                max={65535}
+                className="mt-1"
+              />
+              <p className="text-xs text-muted-foreground">
+                The external port to expose the database on (default: {selectedTemplate?.defaultPort})
+              </p>
+            </div>
+          )}
         </div>
       </div>
 
