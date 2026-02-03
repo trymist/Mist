@@ -323,8 +323,9 @@ func RunContainer(ctx context.Context, app *models.App, imageTag, containerName 
 
 	switch app.AppType {
 	case models.AppTypeWeb:
+		networkMode = "traefik-net"
+
 		if len(domains) > 0 {
-			networkMode = "traefik-net"
 			labels["traefik.enable"] = "true"
 
 			var hostRules []string
@@ -343,32 +344,31 @@ func RunContainer(ctx context.Context, app *models.App, imageTag, containerName 
 			labels[fmt.Sprintf("traefik.http.routers.%s-http.entrypoints", containerName)] = "web"
 			labels[fmt.Sprintf("traefik.http.routers.%s-http.middlewares", containerName)] = fmt.Sprintf("%s-https-redirect", containerName)
 			labels[fmt.Sprintf("traefik.http.middlewares.%s-https-redirect.redirectscheme.scheme", containerName)] = "https"
-		} else {
-			shouldExpose := app.ShouldExpose != nil && *app.ShouldExpose
+		}
 
-			if shouldExpose {
-				exposePort := Port
-				if app.ExposePort != nil && *app.ExposePort > 0 {
-					exposePort = int(*app.ExposePort)
-				}
+		shouldExpose := app.ShouldExpose != nil && *app.ShouldExpose
 
-				port, err := network.ParsePort(fmt.Sprintf("%d/tcp", Port))
-				if err != nil {
-					return fmt.Errorf("failed to parse port: %w", err)
-				}
-				hostIP, err := netip.ParseAddr("0.0.0.0")
-				if err != nil {
-					return fmt.Errorf("failed to parse host IP: %w", err)
-				}
-				exposedPorts[port] = struct{}{}
-				portBindings[port] = []network.PortBinding{
-					{
-						HostIP:   hostIP,
-						HostPort: fmt.Sprintf("%d", exposePort),
-					},
-				}
+		if shouldExpose {
+			exposePort := Port
+			if app.ExposePort != nil && *app.ExposePort > 0 {
+				exposePort = int(*app.ExposePort)
 			}
-			networkMode = "traefik-net"
+
+			port, err := network.ParsePort(fmt.Sprintf("%d/tcp", Port))
+			if err != nil {
+				return fmt.Errorf("failed to parse port: %w", err)
+			}
+			hostIP, err := netip.ParseAddr("0.0.0.0")
+			if err != nil {
+				return fmt.Errorf("failed to parse host IP: %w", err)
+			}
+			exposedPorts[port] = struct{}{}
+			portBindings[port] = []network.PortBinding{
+				{
+					HostIP:   hostIP,
+					HostPort: fmt.Sprintf("%d", exposePort),
+				},
+			}
 		}
 
 	case models.AppTypeService, models.AppTypeDatabase:
