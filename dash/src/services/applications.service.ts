@@ -58,7 +58,10 @@ export const applicationsService = {
     return data.data;
   },
 
-  async update(appId: number, updates: UpdateAppRequest): Promise<App> {
+  async update(appId: number, updates: UpdateAppRequest): Promise<App & {
+    actionRequired: string,
+    actionMessage: string
+  }> {
     const response = await fetch(`${API_BASE}/apps/update`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },

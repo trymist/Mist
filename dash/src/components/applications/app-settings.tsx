@@ -22,11 +22,11 @@ export const AppSettings = ({ app, onUpdate }: AppSettingsProps) => {
   const defaultShouldExpose = app.appType === 'web' ? true : false;
   const [shouldExpose, setShouldExpose] = useState(app.shouldExpose ?? defaultShouldExpose);
   const [exposePort, setExposePort] = useState(app.exposePort?.toString() || "");
-  const [buildCommand, setBuildCommand] = useState(app.buildCommand || "");
-  const [startCommand, setStartCommand] = useState(app.startCommand || "");
+  const [buildCommand,] = useState(app.buildCommand || "");
+  const [startCommand,] = useState(app.startCommand || "");
   const [rootDirectory, setRootDirectory] = useState(app.rootDirectory || "");
   const [dockerfilePath, setDockerfilePath] = useState(app.dockerfilePath || "");
-  const [healthcheckPath, setHealthcheckPath] = useState(app.healthcheckPath || "");
+  const [healthcheckPath,] = useState(app.healthcheckPath || "");
   const [cpuLimit, setCpuLimit] = useState(app.cpuLimit?.toString() || "");
   const [memoryLimit, setMemoryLimit] = useState(app.memoryLimit?.toString() || "");
   const [restartPolicy, setRestartPolicy] = useState(app.restartPolicy || "unless-stopped");
@@ -35,7 +35,7 @@ export const AppSettings = ({ app, onUpdate }: AppSettingsProps) => {
   const [actionDialogOpen, setActionDialogOpen] = useState(false);
   const [actionRequired, setActionRequired] = useState<'restart' | 'redeploy' | null>(null);
   const [actionMessage, setActionMessage] = useState('');
-  const [pendingUpdates, setPendingUpdates] = useState<any>(null);
+  const [, setPendingUpdates] = useState<any>(null);
   const [isRestarting, setIsRestarting] = useState(false);
   const [restartError, setRestartError] = useState<string | null>(null);
 
@@ -58,22 +58,6 @@ export const AppSettings = ({ app, onUpdate }: AppSettingsProps) => {
   // Determine if port exposure settings should be shown (for all app types except compose)
   const showPortExposureSettings = app.appType !== 'compose';
 
-  const detectChanges = () => {
-    const changes: string[] = [];
-    
-    if (port !== originalValues.port?.toString()) changes.push('port');
-    if (shouldExpose !== (originalValues.shouldExpose ?? true)) changes.push('shouldExpose');
-    if (exposePort !== originalValues.exposePort?.toString()) changes.push('exposePort');
-    if (rootDirectory !== originalValues.rootDirectory) changes.push('rootDirectory');
-    if (dockerfilePath !== (originalValues.dockerfilePath || '')) changes.push('dockerfilePath');
-    if (buildCommand !== (originalValues.buildCommand || '')) changes.push('buildCommand');
-    if (startCommand !== (originalValues.startCommand || '')) changes.push('startCommand');
-    if (restartPolicy !== originalValues.restartPolicy) changes.push('restartPolicy');
-    if (parseFloat(cpuLimit || '0') !== (originalValues.cpuLimit || 0)) changes.push('cpuLimit');
-    if (parseInt(memoryLimit || '0') !== (originalValues.memoryLimit || 0)) changes.push('memoryLimit');
-    
-    return changes;
-  };
 
   const handleSave = async () => {
     try {
@@ -135,8 +119,8 @@ export const AppSettings = ({ app, onUpdate }: AppSettingsProps) => {
 
       // Expose port handling - only include if shouldExpose changed or exposePort changed
       const currentExposePort = exposePort ? parseInt(exposePort) : null;
-      if (shouldExpose !== (originalValues.shouldExpose ?? defaultShouldExpose) || 
-          currentExposePort !== originalValues.exposePort) {
+      if (shouldExpose !== (originalValues.shouldExpose ?? defaultShouldExpose) ||
+        currentExposePort !== originalValues.exposePort) {
         if (shouldExpose) {
           if (exposePort) {
             const exposePortNum = parseInt(exposePort);
@@ -315,7 +299,7 @@ export const AppSettings = ({ app, onUpdate }: AppSettingsProps) => {
                       Expose External Port
                     </Label>
                     <p className="text-sm text-muted-foreground">
-                      When enabled, exposes the application on an external port accessible via IP:port. 
+                      When enabled, exposes the application on an external port accessible via IP:port.
                       Only applies when no custom domains are configured.
                     </p>
                   </div>

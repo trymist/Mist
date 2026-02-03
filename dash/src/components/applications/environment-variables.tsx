@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Trash2, Plus, Pencil, X, Check, FileText, Info, Eye, EyeOff, AlertTriangle, Play, RefreshCw } from "lucide-react";
+import { Trash2, Plus, Pencil, X, Check, FileText, Info, Eye, EyeOff, AlertTriangle, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { useEnvironmentVariables } from "@/hooks";
 import { applicationsService } from "@/services";
@@ -35,7 +35,7 @@ export const EnvironmentVariables = ({ appId }: EnvironmentVariablesProps) => {
   const [showNewValue, setShowNewValue] = useState(false);
   const [showEditValue, setShowEditValue] = useState(false);
   const [visibleVarIds, setVisibleVarIds] = useState<Set<number>>(new Set());
-  
+
   // Dialog state for redeployment
   const [actionDialogOpen, setActionDialogOpen] = useState(false);
 
@@ -506,7 +506,7 @@ export const EnvironmentVariables = ({ appId }: EnvironmentVariablesProps) => {
               Redeployment Required
             </DialogTitle>
             <DialogDescription>
-              Environment variable changes require a full redeployment to take effect. 
+              Environment variable changes require a full redeployment to take effect.
               Would you like to redeploy now?
             </DialogDescription>
           </DialogHeader>
