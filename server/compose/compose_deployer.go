@@ -1,3 +1,5 @@
+// exec.Command is still used for docker compose, because moby doesn't support compose yet
+
 package compose
 
 import (

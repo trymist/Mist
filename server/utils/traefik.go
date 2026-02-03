@@ -19,6 +19,7 @@ const (
 	TraefikStaticFile  = "traefik-static.yml"
 )
 
+// on app startup, its necessary to Initialize the traefik with dynamic config, which includes details about wildcard domain, the file is situated in `/var/lib/mist/traefik/dynamic.yml`
 func InitializeTraefikConfig(wildcardDomain *string, mistAppName string) error {
 	return GenerateDynamicConfig(wildcardDomain, mistAppName)
 }
@@ -67,7 +68,7 @@ func generateDynamicYAML(wildcardDomain *string, mistAppName string) ([]byte, er
 
 	domain := strings.TrimPrefix(*wildcardDomain, "*")
 	domain = strings.TrimPrefix(domain, ".")
-	
+
 	mistDomain := mistAppName + "." + domain
 
 	httpConfig := cfg["http"].(map[string]any)
@@ -101,6 +102,8 @@ func generateDynamicYAML(wildcardDomain *string, mistAppName string) ([]byte, er
 	return yaml.Marshal(cfg)
 }
 
+// let's encrypt email is same as the email of user for now
+// TODO: make let's encrypt email updatable
 func ChangeLetsEncryptEmail(email string) error {
 	staticConfigPath := path.Join(TraefikStaticDir, TraefikStaticFile)
 

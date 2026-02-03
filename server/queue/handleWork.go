@@ -21,6 +21,7 @@ import (
 // then this will be helpful
 var deploymentLocks sync.Map
 
+// poll deployments in the queue and start the deployment process (clone, build image, create container, run container, setup labels etc)
 func (q *Queue) HandleWork(id int64, db *gorm.DB) {
 	defer func() {
 		if r := recover(); r != nil {

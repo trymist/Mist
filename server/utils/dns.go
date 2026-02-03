@@ -8,7 +8,9 @@ import (
 	"time"
 )
 
+// returns the public IP, useful when no wildcard domain is configured
 func GetServerIP() (string, error) {
+	// TODO: remove this Getenv, not being used
 	if serverIP := os.Getenv("SERVER_IP"); serverIP != "" {
 		return serverIP, nil
 	}
@@ -23,6 +25,7 @@ func GetServerIP() (string, error) {
 	return localAddr.IP.String(), nil
 }
 
+// validate if dns is pointed to the server IP
 func ValidateDNS(domain string) (bool, error) {
 	serverIP, err := GetServerIP()
 	if err != nil {

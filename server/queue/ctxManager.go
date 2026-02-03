@@ -1,3 +1,6 @@
+// context manager for different deployments
+// used for canceling an ongoing deployment
+
 package queue
 
 import (

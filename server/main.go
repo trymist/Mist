@@ -20,6 +20,7 @@ func main() {
 		log.Fatal().Err(err).Msg("Error initializing database")
 		return
 	}
+	// TODO: remove this extra sqldb
 	sqldb, err := dbInstance.DB()
 	if err != nil {
 		log.Fatal().Err(err).Msg("Error getting sql.DB from gorm DB")
@@ -27,6 +28,8 @@ func main() {
 	}
 	defer sqldb.Close()
 	log.Info().Msg("Database initialized successfully")
+
+	// models is just the service layer, so we initiate it on startup and use it throughout the app later to prevent dependency injection
 	models.SetDB(dbInstance)
 
 	// when we update the app, systemctl restarts the app, and we are unable to update the status of that
@@ -38,6 +41,7 @@ func main() {
 		log.Warn().Err(err).Msg("Failed to check pending updates and deployments")
 	}
 
+	// TODO: extend the store to contain more configurations for fast access
 	err = store.InitStore()
 	if err != nil {
 		log.Fatal().Err(err).Msg("Error initializing store")
