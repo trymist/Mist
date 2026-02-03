@@ -37,6 +37,7 @@ export const AppSettings = ({ app, onUpdate }: AppSettingsProps) => {
   const [actionMessage, setActionMessage] = useState('');
   const [pendingUpdates, setPendingUpdates] = useState<any>(null);
   const [isRestarting, setIsRestarting] = useState(false);
+  const [restartError, setRestartError] = useState<string | null>(null);
 
   // Track original values to detect changes
   const [originalValues] = useState({
@@ -217,12 +218,14 @@ export const AppSettings = ({ app, onUpdate }: AppSettingsProps) => {
   const handleRestart = async () => {
     try {
       setIsRestarting(true);
+      setRestartError(null);
       await applicationsService.recreateContainer(app.id);
       toast.success("Container recreated successfully");
       setActionDialogOpen(false);
       onUpdate();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to recreate container");
+      const errorMessage = error instanceof Error ? error.message : "Failed to recreate container";
+      setRestartError(errorMessage);
     } finally {
       setIsRestarting(false);
     }
@@ -492,7 +495,14 @@ export const AppSettings = ({ app, onUpdate }: AppSettingsProps) => {
       </CardContent>
 
       {/* Action Required Dialog */}
-      <Dialog open={actionDialogOpen} onOpenChange={(open) => !isRestarting && setActionDialogOpen(open)}>
+      <Dialog open={actionDialogOpen} onOpenChange={(open) => {
+        if (!isRestarting) {
+          setActionDialogOpen(open);
+          if (!open) {
+            setRestartError(null);
+          }
+        }
+      }}>
         <DialogContent onPointerDownOutside={(e) => isRestarting && e.preventDefault()}>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -503,6 +513,11 @@ export const AppSettings = ({ app, onUpdate }: AppSettingsProps) => {
               {isRestarting ? "Restarting container, please wait..." : actionMessage}
             </DialogDescription>
           </DialogHeader>
+          {restartError && (
+            <div className="p-3 rounded-md bg-destructive/10 text-destructive text-sm break-words max-h-32 overflow-y-auto">
+              Error: {restartError}
+            </div>
+          )}
           <DialogFooter className="flex gap-2 sm:justify-end">
             <Button variant="outline" onClick={handleSkip} disabled={isRestarting}>
               Skip for Now

@@ -65,15 +65,18 @@ export const Volumes = ({ appId, appType }: VolumesProps) => {
   };
 
   const [isRestarting, setIsRestarting] = useState(false);
+  const [restartError, setRestartError] = useState<string | null>(null);
 
   const handleRestart = async () => {
     try {
       setIsRestarting(true);
+      setRestartError(null);
       await applicationsService.recreateContainer(appId);
       toast.success("Container recreated successfully - volume changes applied");
       setActionDialogOpen(false);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to recreate container");
+      const errorMessage = error instanceof Error ? error.message : "Failed to recreate container";
+      setRestartError(errorMessage);
     } finally {
       setIsRestarting(false);
     }
@@ -420,7 +423,14 @@ export const Volumes = ({ appId, appType }: VolumesProps) => {
       </CardContent>
 
       {/* Restart Dialog */}
-      <Dialog open={actionDialogOpen} onOpenChange={(open) => !isRestarting && setActionDialogOpen(open)}>
+      <Dialog open={actionDialogOpen} onOpenChange={(open) => {
+        if (!isRestarting) {
+          setActionDialogOpen(open);
+          if (!open) {
+            setRestartError(null);
+          }
+        }
+      }}>
         <DialogContent onPointerDownOutside={(e) => isRestarting && e.preventDefault()}>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -433,6 +443,11 @@ export const Volumes = ({ appId, appType }: VolumesProps) => {
                 : "Volume changes require restarting the container to take effect. Would you like to restart now?"}
             </DialogDescription>
           </DialogHeader>
+          {restartError && (
+            <div className="p-3 rounded-md bg-destructive/10 text-destructive text-sm break-words max-h-32 overflow-y-auto">
+              Error: {restartError}
+            </div>
+          )}
           <DialogFooter className="flex gap-2 sm:justify-end">
             <Button variant="outline" onClick={handleSkipRestart} disabled={isRestarting}>
               Skip for Now
