@@ -240,7 +240,7 @@ export const AppInfo = ({ app, latestCommit }: Props) => {
                       <span className="font-mono break-all">{previewUrl.replace(/^https?:\/\//, '')}</span>
                     </a>
                   ) : (
-                    <p className="text-muted-foreground text-sm">No domains configured</p>
+                    <p className="text-muted-foreground text-sm">No domain or exposed port configured</p>
                   )}
                 </div>
               </InfoItem>

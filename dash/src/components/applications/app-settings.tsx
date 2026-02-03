@@ -440,7 +440,7 @@ export const AppSettings = ({ app, onUpdate }: AppSettingsProps) => {
             </p>
           </div>
 
-          <div className="space-y-2">
+          {/* <div className="space-y-2">
             <Label htmlFor="healthcheckPath">Health Check Path</Label>
             <Input
               id="healthcheckPath"
@@ -486,7 +486,7 @@ export const AppSettings = ({ app, onUpdate }: AppSettingsProps) => {
                 ? 'Start command managed by template'
                 : 'Command to start your application (optional)'}
             </p>
-          </div>
+          </div> */}
         </div>
 
       </CardContent>

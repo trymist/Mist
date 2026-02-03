@@ -38,7 +38,6 @@ export const EnvironmentVariables = ({ appId }: EnvironmentVariablesProps) => {
   
   // Dialog state for redeployment
   const [actionDialogOpen, setActionDialogOpen] = useState(false);
-  const [isRedeploying, setIsRedeploying] = useState(false);
 
   const parseEnvText = (text: string) => {
     const lines = text.split('\n').filter(line => line.trim());
