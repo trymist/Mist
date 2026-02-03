@@ -38,6 +38,9 @@ func GetLatestCommit(appID int64, userID int64) (*models.LatestCommit, error) {
 
 }
 
+// for repositories which are linked via git clone url and not any github provider
+// we temporarily clone it (not fully) to get the latest commit information
+// the path for this temp repo is `/var/lib/mist/git-meta/repo-`
 func latestRemoteCommit(repoURL string) (*models.LatestCommit, error) {
 
 	tmpPath := filepath.Join(constants.Constants["RootPath"].(string), "git-meta")
@@ -60,6 +63,9 @@ func latestRemoteCommit(repoURL string) (*models.LatestCommit, error) {
 	if out, err := cmd.CombinedOutput(); err != nil {
 		return nil, fmt.Errorf("git remote add failed: %w: %s", err, out)
 	}
+
+	// use `--filter=blob:none` to not to fetch any actual file at this point, we only fetching the
+	// git metadata not the actual repo
 	cmd = exec.Command(
 		"git",
 		"fetch",

@@ -1,3 +1,7 @@
+// if the server dies mid update or between deployments, then the update and/or deployment gets stuck
+// in pending state and never recover, so every startup we check for pending deployments and updates and
+// put them in queue for redeployment or force complete/fail them accordingly
+
 package lib
 
 import (
@@ -20,6 +24,8 @@ func CleanupOnStartup() error {
 	return nil
 }
 
+// checks for all pending deployments which couldn't be completed because of server crash or something
+// which lead mist to stop
 func cleanupDeployments() error {
 	deployments, err := models.GetIncompleteDeployments()
 	if err != nil {
@@ -35,6 +41,9 @@ func cleanupDeployments() error {
 
 	errorMsg := "system died before deployment could complete"
 	for _, dep := range deployments {
+
+		// if deployment was in deploying/ building phase, we force fail them as they can't be continued
+		// from here
 		if dep.Status == "deploying" || dep.Status == "building" {
 			log.Warn().
 				Int64("deployment_id", dep.ID).
@@ -46,6 +55,8 @@ func cleanupDeployments() error {
 				log.Error().Err(err).Int64("deployment_id", dep.ID).Msg("Failed to mark deployment as failed")
 				return err
 			}
+			// if deployment was pending, i.e. it was sitting in queue waiting for its turn, then we can
+			// continue from here and put it back in the queue for re-deployment
 		} else if dep.Status == "pending" {
 			log.Info().
 				Int64("deployment_id", dep.ID).
@@ -65,6 +76,13 @@ func cleanupDeployments() error {
 	return nil
 }
 
+// while updating the mist we change the binary and restart the mist.service which ends up in sudden
+// killing the update process without changing the db
+// so on each startup we check if there is a update which was stuck as pending, bcz it couldn't be
+// marked as complete due to restarting of the server
+// with each update we alter the system settings table on each startup with latest version,
+// so if the version which is in system settings table is greater than the version in the UpdateLog
+// the system was updated successfully, so we mark it a success in db or fail it otherwise
 func cleanupUpdates() error {
 	logs, err := models.GetUpdateLogs(1)
 	if err != nil {

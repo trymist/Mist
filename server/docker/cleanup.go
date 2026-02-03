@@ -10,11 +10,13 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+// remove more that keepCount images to save storage
 func CleanupOldImages(appID int64, keepCount int) error {
 	if keepCount < 1 {
 		keepCount = 5
 	}
 
+	// TODO: this part is wrong and isn't working, fix it and include it
 	imagePattern := fmt.Sprintf("mist-app-%d-", appID)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
@@ -151,6 +153,7 @@ func CleanupOldImages(appID int64, keepCount int) error {
 	// return nil
 }
 
+// cleanup dangling images, (triggered from the dashboard)
 func CleanupDanglingImages() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
@@ -192,6 +195,7 @@ func CleanupDanglingImages() error {
 	// return nil
 }
 
+// cleanup stopped containers, triggered from dashboard
 func CleanupStoppedContainers() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
@@ -228,6 +232,7 @@ func CleanupStoppedContainers() error {
 	// return nil
 }
 
+// system prune, triggered from dashboard
 func SystemPrune() (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
@@ -239,7 +244,6 @@ func SystemPrune() (string, error) {
 
 	var output string
 
-	// Prune containers
 	containerReport, err := cli.ContainerPrune(ctx, client.ContainerPruneOptions{})
 	if err != nil {
 		return output, fmt.Errorf("failed to prune containers: %w", err)
@@ -247,7 +251,6 @@ func SystemPrune() (string, error) {
 	output += fmt.Sprintf("Deleted Containers: %v\n", containerReport.Report.ContainersDeleted)
 	output += fmt.Sprintf("Space Reclaimed: %d bytes\n", containerReport.Report.SpaceReclaimed)
 
-	// Prune images (dangling only for basic prune)
 	filterArgs := make(client.Filters)
 	filterArgs.Add("dangling", "true")
 	imageReport, err := cli.ImagePrune(ctx, client.ImagePruneOptions{
@@ -259,14 +262,12 @@ func SystemPrune() (string, error) {
 	output += fmt.Sprintf("Deleted Images: %v\n", imageReport.Report.ImagesDeleted)
 	output += fmt.Sprintf("Space Reclaimed: %d bytes\n", imageReport.Report.SpaceReclaimed)
 
-	// Prune networks
 	networkReport, err := cli.NetworkPrune(ctx, client.NetworkPruneOptions{})
 	if err != nil {
 		return output, fmt.Errorf("failed to prune networks: %w", err)
 	}
 	output += fmt.Sprintf("Deleted Networks: %v\n", networkReport.Report.NetworksDeleted)
 
-	// Prune build cache
 	buildCacheReport, err := cli.BuildCachePrune(ctx, client.BuildCachePruneOptions{})
 	if err != nil {
 		return output, fmt.Errorf("failed to prune build cache: %w", err)
@@ -297,6 +298,7 @@ func SystemPrune() (string, error) {
 	// return string(output), nil
 }
 
+// system prune all, triggered from dashboard
 func SystemPruneAll() (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
@@ -308,7 +310,6 @@ func SystemPruneAll() (string, error) {
 
 	var output string
 
-	// Prune containers
 	containerReport, err := cli.ContainerPrune(ctx, client.ContainerPruneOptions{})
 	if err != nil {
 		return output, fmt.Errorf("failed to prune containers: %w", err)
@@ -316,8 +317,6 @@ func SystemPruneAll() (string, error) {
 	output += fmt.Sprintf("Deleted Containers: %v\n", containerReport.Report.ContainersDeleted)
 	output += fmt.Sprintf("Space Reclaimed: %d bytes\n", containerReport.Report.SpaceReclaimed)
 
-	// Prune ALL unused images (not just dangling, equivalent to -a flag)
-	// By not specifying dangling=true filter, it will prune all unused images
 	imageReport, err := cli.ImagePrune(ctx, client.ImagePruneOptions{})
 	if err != nil {
 		return output, fmt.Errorf("failed to prune images: %w", err)
@@ -325,14 +324,12 @@ func SystemPruneAll() (string, error) {
 	output += fmt.Sprintf("Deleted Images: %v\n", imageReport.Report.ImagesDeleted)
 	output += fmt.Sprintf("Space Reclaimed: %d bytes\n", imageReport.Report.SpaceReclaimed)
 
-	// Prune networks
 	networkReport, err := cli.NetworkPrune(ctx, client.NetworkPruneOptions{})
 	if err != nil {
 		return output, fmt.Errorf("failed to prune networks: %w", err)
 	}
 	output += fmt.Sprintf("Deleted Networks: %v\n", networkReport.Report.NetworksDeleted)
 
-	// Prune build cache (all)
 	buildCacheReport, err := cli.BuildCachePrune(ctx, client.BuildCachePruneOptions{
 		All: true,
 	})

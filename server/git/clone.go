@@ -34,6 +34,7 @@ func CloneGitRepo(ctx context.Context, url string, branch string, logFile *os.Fi
 	return nil
 }
 
+// TODO: make this git provider independent
 func CloneRepo(ctx context.Context, appId int64, logFile *os.File) error {
 	log.Info().Int64("app_id", appId).Msg("Starting repository clone")
 

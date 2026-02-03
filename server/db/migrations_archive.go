@@ -1,3 +1,7 @@
+// archived migrations
+// used in version < 1.0.3
+// TODO: remove this
+
 package db
 
 import (
