@@ -439,7 +439,7 @@ export const applicationsService = {
     });
 
     const data = await response.json();
-    if (!data.success) {
+    if (!data.id) {
       throw new Error(data.error || 'Failed to trigger redeployment');
     }
 
