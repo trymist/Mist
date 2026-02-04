@@ -9,8 +9,10 @@ import (
 	"github.com/corecollectives/mist/docker"
 	"github.com/corecollectives/mist/fs"
 	"github.com/corecollectives/mist/git"
+	"github.com/corecollectives/mist/github"
 	"github.com/corecollectives/mist/models"
 	"github.com/corecollectives/mist/utils"
+	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
 )
 
@@ -86,7 +88,12 @@ func (q *Queue) HandleWork(id int64, db *gorm.DB) {
 	if app.AppType != models.AppTypeDatabase {
 		logger.Info("Cloning repository")
 		models.UpdateDeploymentStatus(id, "cloning", "cloning", 20, nil)
-
+		if dep.GithubDepId != nil {
+			err = github.UpdateDeployment(*app.GitRepository, *dep.GithubDepId, "in_progress", "building application", int(app.CreatedBy))
+			if err != nil {
+				log.Err(err).Msg("error updating GH deployment")
+			}
+		}
 		err = git.CloneRepo(ctx, appId, logFile)
 		if err != nil {
 			if ctx.Err() == context.Canceled {
@@ -118,14 +125,33 @@ func (q *Queue) HandleWork(id int64, db *gorm.DB) {
 			logger.Info("Deployment cancelled by user")
 			errMsg := "deployment stopped by user"
 			models.UpdateDeploymentStatus(id, "stopped", "stopped", dep.Progress, &errMsg)
+			if dep.GithubDepId != nil {
+				err = github.UpdateDeployment(*app.GitRepository, *dep.GithubDepId, "failure", "deployment stopped by user", int(app.CreatedBy))
+				if err != nil {
+					log.Err(err).Msg("error updating GH deployment")
+				}
+			}
 			return
 		}
 		logger.Error(err, "Deployment failed")
 		errMsg := fmt.Sprintf("Deployment failed: %v", err)
 		models.UpdateDeploymentStatus(id, "failed", "failed", 0, &errMsg)
+		if dep.GithubDepId != nil {
+			err = github.UpdateDeployment(*app.GitRepository, *dep.GithubDepId, "error", err.Error(), int(app.CreatedBy))
+			if err != nil {
+				log.Err(err).Msg("error updating GH deployment")
+			}
+		}
 		fmt.Fprint(logFile, "error deploying docker: ", err.Error())
 		return
-	}
+	} else {
+		if dep.GithubDepId != nil {
+			err = github.UpdateDeployment(*app.GitRepository, *dep.GithubDepId, "success", "deployed successfully", int(app.CreatedBy))
+			if err != nil {
+				log.Err(err).Msg("error updating GH deployment")
+			}
 
-	logger.Info("Deployment completed successfully")
+		}
+		logger.Info("Deployment completed successfully")
+	}
 }

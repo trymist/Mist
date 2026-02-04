@@ -30,7 +30,7 @@ func GetBranches(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, err := github.GetGitHubAccessToken(int(userInfo.ID))
+	token, _, err := github.GetGitHubAccessToken(int(userInfo.ID))
 	if err != nil {
 		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to get GitHub access token", err.Error())
 		return
