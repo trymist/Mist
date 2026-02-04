@@ -54,7 +54,12 @@ func CreateEnvVariable(w http.ResponseWriter, r *http.Request) {
 		"key":    req.Key,
 	})
 
-	handlers.SendResponse(w, http.StatusOK, true, env, "Environment variable created successfully", "")
+	response := map[string]interface{}{
+		"envVariable":    env,
+		"actionRequired": "redeploy",
+		"actionMessage":  "Environment variable changes require a full redeployment to take effect. Would you like to redeploy now?",
+	}
+	handlers.SendResponse(w, http.StatusOK, true, response, "Environment variable created successfully", "")
 }
 
 func GetEnvVariables(w http.ResponseWriter, r *http.Request) {
@@ -153,7 +158,12 @@ func UpdateEnvVariable(w http.ResponseWriter, r *http.Request) {
 		"key":    req.Key,
 	})
 
-	handlers.SendResponse(w, http.StatusOK, true, updatedEnv, "Environment variable updated successfully", "")
+	response := map[string]interface{}{
+		"envVariable":    updatedEnv,
+		"actionRequired": "redeploy",
+		"actionMessage":  "Environment variable changes require a full redeployment to take effect. Would you like to redeploy now?",
+	}
+	handlers.SendResponse(w, http.StatusOK, true, response, "Environment variable updated successfully", "")
 }
 
 func DeleteEnvVariable(w http.ResponseWriter, r *http.Request) {
@@ -204,5 +214,9 @@ func DeleteEnvVariable(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	handlers.SendResponse(w, http.StatusOK, true, nil, "Environment variable deleted successfully", "")
+	response := map[string]interface{}{
+		"actionRequired": "redeploy",
+		"actionMessage":  "Environment variable changes require a full redeployment to take effect. Would you like to redeploy now?",
+	}
+	handlers.SendResponse(w, http.StatusOK, true, response, "Environment variable deleted successfully", "")
 }

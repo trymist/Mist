@@ -4,9 +4,11 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Trash2, Plus, Pencil, X, Check, FileText, Info, Eye, EyeOff } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Trash2, Plus, Pencil, X, Check, FileText, Info, Eye, EyeOff, AlertTriangle, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { useEnvironmentVariables } from "@/hooks";
+import { applicationsService } from "@/services";
 import type { EnvVariable } from "@/types";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
@@ -33,6 +35,9 @@ export const EnvironmentVariables = ({ appId }: EnvironmentVariablesProps) => {
   const [showNewValue, setShowNewValue] = useState(false);
   const [showEditValue, setShowEditValue] = useState(false);
   const [visibleVarIds, setVisibleVarIds] = useState<Set<number>>(new Set());
+
+  // Dialog state for redeployment
+  const [actionDialogOpen, setActionDialogOpen] = useState(false);
 
   const parseEnvText = (text: string) => {
     const lines = text.split('\n').filter(line => line.trim());
@@ -79,6 +84,26 @@ export const EnvironmentVariables = ({ appId }: EnvironmentVariablesProps) => {
     }
   };
 
+  const showRedeployDialog = () => {
+    setActionDialogOpen(true);
+  };
+
+  const handleRedeploy = async () => {
+    try {
+      setActionDialogOpen(false);
+      toast.info("Starting full redeployment (this may take several minutes)...");
+      await applicationsService.redeploy(appId);
+      toast.success("Redeployment started - environment variables will be applied");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to trigger redeployment");
+    }
+  };
+
+  const handleSkipRedeploy = () => {
+    setActionDialogOpen(false);
+    toast.info("Environment variable changes will take effect on next redeployment");
+  };
+
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newKey.trim()) {
@@ -92,6 +117,8 @@ export const EnvironmentVariables = ({ appId }: EnvironmentVariablesProps) => {
       setNewValue("");
       setShowNewValue(false);
       setShowAddForm(false);
+      // Show redeploy dialog since env vars require full redeployment
+      showRedeployDialog();
     }
   };
 
@@ -120,6 +147,8 @@ export const EnvironmentVariables = ({ appId }: EnvironmentVariablesProps) => {
 
     if (successCount > 0) {
       toast.success(`Added ${successCount} environment variable${successCount > 1 ? 's' : ''}`);
+      // Show redeploy dialog since env vars require full redeployment
+      showRedeployDialog();
     }
     if (failCount > 0) {
       toast.error(`Failed to add ${failCount} variable${failCount > 1 ? 's' : ''}`);
@@ -140,6 +169,8 @@ export const EnvironmentVariables = ({ appId }: EnvironmentVariablesProps) => {
     const result = await updateEnvVar(id, editKey.trim(), editValue);
     if (result) {
       setEditingId(null);
+      // Show redeploy dialog since env vars require full redeployment
+      showRedeployDialog();
     }
   };
 
@@ -147,7 +178,11 @@ export const EnvironmentVariables = ({ appId }: EnvironmentVariablesProps) => {
     if (!confirm("Are you sure you want to delete this environment variable?")) {
       return;
     }
-    await deleteEnvVar(id);
+    const result = await deleteEnvVar(id);
+    if (result) {
+      // Show redeploy dialog since env vars require full redeployment
+      showRedeployDialog();
+    }
   };
 
   const startEdit = (env: EnvVariable) => {
@@ -461,6 +496,31 @@ export const EnvironmentVariables = ({ appId }: EnvironmentVariablesProps) => {
           </div>
         )}
       </CardContent>
+
+      {/* Redeploy Dialog */}
+      <Dialog open={actionDialogOpen} onOpenChange={setActionDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-yellow-500" />
+              Redeployment Required
+            </DialogTitle>
+            <DialogDescription>
+              Environment variable changes require a full redeployment to take effect.
+              Would you like to redeploy now?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex gap-2 sm:justify-end">
+            <Button variant="outline" onClick={handleSkipRedeploy}>
+              Skip for Now
+            </Button>
+            <Button onClick={handleRedeploy} className="flex items-center gap-2">
+              <RefreshCw className="h-4 w-4" />
+              Redeploy Now
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 };

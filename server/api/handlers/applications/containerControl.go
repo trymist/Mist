@@ -228,6 +228,66 @@ func RestartContainerHandler(w http.ResponseWriter, r *http.Request) {
 	}, "Application restarted successfully", "")
 }
 
+// recreate and start the container without rebuilding the image
+func RecreateContainerHandler(w http.ResponseWriter, r *http.Request) {
+	userInfo, ok := middleware.GetUser(r)
+	if !ok {
+		handlers.SendResponse(w, http.StatusUnauthorized, false, nil, "Not logged in", "Unauthorized")
+		return
+	}
+
+	appIdStr := r.URL.Query().Get("appId")
+	if appIdStr == "" {
+		handlers.SendResponse(w, http.StatusBadRequest, false, nil, "appId is required", "")
+		return
+	}
+
+	appId, err := strconv.ParseInt(appIdStr, 10, 64)
+	if err != nil {
+		handlers.SendResponse(w, http.StatusBadRequest, false, nil, "Invalid appId", "")
+		return
+	}
+
+	isApplicationOwner, err := models.IsUserApplicationOwner(userInfo.ID, appId)
+	if err != nil {
+		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to verify application ownership", err.Error())
+		return
+	}
+	if !isApplicationOwner {
+		handlers.SendResponse(w, http.StatusForbidden, false, nil, "You do not have permission to control this application", "Forbidden")
+		return
+	}
+
+	app, err := models.GetApplicationByID(appId)
+	if err != nil {
+		handlers.SendResponse(w, http.StatusNotFound, false, nil, "Application not found", err.Error())
+		return
+	}
+
+	if err := docker.RecreateContainer(app); err != nil {
+		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to recreate container", err.Error())
+		return
+	}
+
+	app.Status = models.StatusRunning
+	if err := app.UpdateApplication(); err != nil {
+		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to update app status", err.Error())
+		return
+	}
+
+	containerName := docker.GetContainerName(app.Name, appId)
+
+	models.LogUserAudit(userInfo.ID, "recreate", "container", &appId, map[string]interface{}{
+		"app_name":       app.Name,
+		"container_name": containerName,
+		"app_type":       app.AppType,
+	})
+
+	handlers.SendResponse(w, http.StatusOK, true, map[string]any{
+		"message": "Container recreated successfully",
+	}, "Container recreated successfully", "")
+}
+
 func GetContainerStatusHandler(w http.ResponseWriter, r *http.Request) {
 	userInfo, ok := middleware.GetUser(r)
 	if !ok {
@@ -262,13 +322,10 @@ func GetContainerStatusHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// containerName declaration moved
-
 	if app.AppType == models.AppTypeCompose {
 		path := fmt.Sprintf("/var/lib/mist/projects/%d/apps/%s", app.ProjectID, app.Name)
 		status, err := compose.GetComposeStatus(path, app.Name)
 		if err != nil {
-			// If error, maybe it's just not running or folder doesn't exist
 			handlers.SendResponse(w, http.StatusOK, true, map[string]interface{}{
 				"name":   app.Name,
 				"status": "Unknown",

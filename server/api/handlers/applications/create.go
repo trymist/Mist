@@ -23,6 +23,8 @@ func CreateApplication(w http.ResponseWriter, r *http.Request) {
 		AppType      string            `json:"appType"`      // "web", "service", "database"
 		TemplateName *string           `json:"templateName"` // For database type
 		Port         *int              `json:"port"`         // For web type
+		ShouldExpose *bool             `json:"shouldExpose"` // For web type
+		ExposePort   *int              `json:"exposePort"`   // For web type
 		EnvVars      map[string]string `json:"envVars"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -77,10 +79,34 @@ func CreateApplication(w http.ResponseWriter, r *http.Request) {
 			app.Port = &defaultPort
 		}
 
+		if req.ShouldExpose != nil {
+			app.ShouldExpose = req.ShouldExpose
+		} else {
+			defaultShouldExpose := true
+			app.ShouldExpose = &defaultShouldExpose
+		}
+
+		if req.ExposePort != nil {
+			exposePort := int64(*req.ExposePort)
+			app.ExposePort = &exposePort
+		}
+
 	case "service":
 		// this port doesn't matter becuase yeh externally available nhi hai its something that will work without being exposed to external http
 		internalPort := int64(3000)
 		app.Port = &internalPort
+
+		if req.ShouldExpose != nil {
+			app.ShouldExpose = req.ShouldExpose
+		} else {
+			defaultShouldExpose := false
+			app.ShouldExpose = &defaultShouldExpose
+		}
+
+		if req.ExposePort != nil {
+			exposePort := int64(*req.ExposePort)
+			app.ExposePort = &exposePort
+		}
 
 	case "database":
 		if req.TemplateName == nil || *req.TemplateName == "" {
@@ -108,6 +134,18 @@ func CreateApplication(w http.ResponseWriter, r *http.Request) {
 		}
 		if template.RecommendedMemory != nil {
 			app.MemoryLimit = template.RecommendedMemory
+		}
+
+		if req.ShouldExpose != nil {
+			app.ShouldExpose = req.ShouldExpose
+		} else {
+			defaultShouldExpose := false
+			app.ShouldExpose = &defaultShouldExpose
+		}
+
+		if req.ExposePort != nil {
+			exposePort := int64(*req.ExposePort)
+			app.ExposePort = &exposePort
 		}
 	}
 

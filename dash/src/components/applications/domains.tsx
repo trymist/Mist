@@ -3,10 +3,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Trash2, Plus, Pencil, X, Check, ExternalLink, ChevronDown, ChevronUp } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Trash2, Plus, Pencil, X, Check, ExternalLink, ChevronDown, ChevronUp, AlertTriangle, RefreshCw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { useDomains } from "@/hooks";
+import { applicationsService } from "@/services";
 import { DNSValidation } from "./dns-validation";
 import type { Domain } from "@/types";
 
@@ -25,6 +27,32 @@ export const Domains = ({ appId }: DomainsProps) => {
   const [editDomain, setEditDomain] = useState("");
   const [showAddForm, setShowAddForm] = useState(false);
   const [expandedDomain, setExpandedDomain] = useState<number | null>(null);
+  const [actionDialogOpen, setActionDialogOpen] = useState(false);
+  const [isRestarting, setIsRestarting] = useState(false);
+  const [restartError, setRestartError] = useState<string | null>(null);
+
+  const showRestartDialog = () => {
+    setActionDialogOpen(true);
+  };
+
+  const handleRestart = async () => {
+    try {
+      setIsRestarting(true);
+      setRestartError(null);
+      await applicationsService.recreateContainer(appId);
+      toast.success("Container recreated successfully - domain changes applied");
+      setActionDialogOpen(false);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Failed to recreate container";
+      setRestartError(errorMessage);
+    } finally {
+      setIsRestarting(false);
+    }
+  }
+  const handleSkipRestart = () => {
+    setActionDialogOpen(false);
+    toast.info("Domain changes will take effect on next restart or redeployment");
+  };
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,6 +65,8 @@ export const Domains = ({ appId }: DomainsProps) => {
     if (result) {
       setNewDomain("");
       setShowAddForm(false);
+      // Show restart dialog since domains require container recreation
+      showRestartDialog();
     }
   };
 
@@ -49,6 +79,8 @@ export const Domains = ({ appId }: DomainsProps) => {
     const result = await updateDomain(id, editDomain.trim());
     if (result) {
       setEditingId(null);
+      // Show restart dialog since domains require container recreation
+      showRestartDialog();
     }
   };
 
@@ -56,7 +88,11 @@ export const Domains = ({ appId }: DomainsProps) => {
     if (!confirm("Are you sure you want to delete this domain?")) {
       return;
     }
-    await deleteDomain(id);
+    const result = await deleteDomain(id);
+    if (result) {
+      // Show restart dialog since domains require container recreation
+      showRestartDialog();
+    }
   };
 
   const startEdit = (domain: Domain) => {
@@ -255,6 +291,44 @@ export const Domains = ({ appId }: DomainsProps) => {
           </div>
         )}
       </CardContent>
+
+      {/* Restart Dialog */}
+      <Dialog open={actionDialogOpen} onOpenChange={(open) => {
+        if (!isRestarting) {
+          setActionDialogOpen(open);
+          if (!open) {
+            setRestartError(null);
+          }
+        }
+      }}>
+        <DialogContent onPointerDownOutside={(e) => isRestarting && e.preventDefault()}>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-yellow-500" />
+              Restart Required
+            </DialogTitle>
+            <DialogDescription>
+              {isRestarting
+                ? "Restarting container, please wait..."
+                : "Domain changes require restarting the container to take effect. Would you like to restart now?"}
+            </DialogDescription>
+          </DialogHeader>
+          {restartError && (
+            <div className="p-3 rounded-md bg-destructive/10 text-destructive text-sm">
+              Error: {restartError}
+            </div>
+          )}
+          <DialogFooter className="flex gap-2 sm:justify-end">
+            <Button variant="outline" onClick={handleSkipRestart} disabled={isRestarting}>
+              Skip for Now
+            </Button>
+            <Button onClick={handleRestart} disabled={isRestarting} className="flex items-center gap-2">
+              <RefreshCw className={`h-4 w-4 ${isRestarting ? 'animate-spin' : ''}`} />
+              {isRestarting ? 'Restarting...' : 'Restart Now'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 };

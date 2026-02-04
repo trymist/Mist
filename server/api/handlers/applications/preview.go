@@ -71,12 +71,23 @@ func GetPreviewURL(w http.ResponseWriter, r *http.Request) {
 				port = int(*app.Port)
 			}
 
-			previewURL := fmt.Sprintf("http://%s:%d", serverIP, port)
+			exposePort := port
+			if app.ShouldExpose != nil && *app.ShouldExpose && app.ExposePort != nil && *app.ExposePort > 0 {
+				exposePort = int(*app.ExposePort)
+			} else {
+				handlers.SendResponse(w, http.StatusOK, true, map[string]interface{}{
+					"url":  "",
+					"type": "none",
+				}, "No domain or exposed port configured", "")
+				return
+			}
+
+			previewURL := fmt.Sprintf("http://%s:%d", serverIP, exposePort)
 			handlers.SendResponse(w, http.StatusOK, true, map[string]interface{}{
 				"url":  previewURL,
 				"type": "ip",
 				"ip":   serverIP,
-				"port": port,
+				"port": exposePort,
 			}, "Preview URL retrieved (using IP:port)", "")
 			return
 		}

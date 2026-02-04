@@ -16,6 +16,8 @@ export type App = {
   gitCloneUrl: string | null;
   deploymentStrategy: string;
   port: number | null;
+  shouldExpose: boolean | null;
+  exposePort: number | null;
   rootDirectory: string;
   buildCommand: string | null;
   startCommand: string | null;
@@ -39,6 +41,8 @@ export type CreateAppRequest = {
   gitRepository?: string;
   gitBranch?: string;
   port?: number;
+  shouldExpose?: boolean;
+  exposePort?: number;
   rootDirectory?: string;
   buildCommand?: string;
   startCommand?: string;

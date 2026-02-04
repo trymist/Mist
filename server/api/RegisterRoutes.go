@@ -80,6 +80,7 @@ func RegisterRoutes(mux *http.ServeMux) {
 	mux.Handle("POST /api/apps/container/stop", middleware.AuthMiddleware()(http.HandlerFunc(applications.StopContainerHandler)))
 	mux.Handle("POST /api/apps/container/start", middleware.AuthMiddleware()(http.HandlerFunc(applications.StartContainerHandler)))
 	mux.Handle("POST /api/apps/container/restart", middleware.AuthMiddleware()(http.HandlerFunc(applications.RestartContainerHandler)))
+	mux.Handle("POST /api/apps/container/recreate", middleware.AuthMiddleware()(http.HandlerFunc(applications.RecreateContainerHandler)))
 	mux.Handle("GET /api/apps/container/status", middleware.AuthMiddleware()(http.HandlerFunc(applications.GetContainerStatusHandler)))
 	mux.Handle("GET /api/apps/container/logs", middleware.AuthMiddleware()(http.HandlerFunc(applications.GetContainerLogsHandler)))
 
