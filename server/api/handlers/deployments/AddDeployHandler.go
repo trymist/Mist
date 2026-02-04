@@ -80,14 +80,12 @@ func AddDeployHandler(w http.ResponseWriter, r *http.Request) {
 		depId, err := github.CreateDeployment(*app.GitRepository, app.GitBranch, int(user.ID))
 		if err != nil {
 			log.Err(err).Msg("failed to create github deployment")
-			return
 		}
 
 		deployment.GithubDepId = &depId
 		err = deployment.UpdateDeployment()
 		if err != nil {
 			log.Err(err).Msg("failed to update deployment with GH dep id")
-			return
 		}
 	}
 	if err := queue.AddJob(int64(deployment.ID)); err != nil {
