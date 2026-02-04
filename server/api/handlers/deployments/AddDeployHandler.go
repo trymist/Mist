@@ -7,6 +7,7 @@ import (
 	"github.com/corecollectives/mist/api/handlers"
 	"github.com/corecollectives/mist/api/middleware"
 	"github.com/corecollectives/mist/git"
+	"github.com/corecollectives/mist/github"
 	"github.com/corecollectives/mist/models"
 	"github.com/corecollectives/mist/queue"
 	"github.com/rs/zerolog/log"
@@ -74,6 +75,19 @@ func AddDeployHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// create github deployment
+	if app.GitRepository != nil {
+		depId, err := github.CreateDeployment(*app.GitRepository, app.GitBranch, int(user.ID))
+		if err != nil {
+			log.Err(err).Msg("failed to create github deployment")
+		}
+
+		deployment.GithubDepId = &depId
+		err = deployment.UpdateDeployment()
+		if err != nil {
+			log.Err(err).Msg("failed to update deployment with GH dep id")
+		}
+	}
 	if err := queue.AddJob(int64(deployment.ID)); err != nil {
 		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "failed to add job to queue", err.Error())
 		return

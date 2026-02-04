@@ -78,8 +78,8 @@ func CreateGithubApp(w http.ResponseWriter, r *http.Request) {
 		DefaultPermissions: map[string]string{
 			"contents":         "read",
 			"metadata":         "read",
-			"pull_requests":    "read",
-			"deployments":      "read",
+			"pull_requests":    "write",
+			"deployments":      "write",
 			"administration":   "write",
 			"repository_hooks": "write",
 		},

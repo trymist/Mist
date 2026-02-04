@@ -24,14 +24,12 @@ func GetLatestCommit(appID int64, userID int64) (*models.LatestCommit, error) {
 		return nil, err
 	}
 	if gitProvider == nil && gitCloneUrl != nil {
-		fmt.Printf("no provider found")
 		return latestRemoteCommit(*gitCloneUrl)
 	} else if gitProvider == nil && gitCloneUrl == nil {
 		return nil, fmt.Errorf("git url or provider not given")
 	}
 
 	if *gitProvider == models.GitProviderGitHub {
-		fmt.Printf("github provider found")
 		return github.GetLatestCommit(appID, userID)
 	}
 	return nil, fmt.Errorf("failed to get latest commit")
