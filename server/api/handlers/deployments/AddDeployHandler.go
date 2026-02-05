@@ -43,7 +43,13 @@ func AddDeployHandler(w http.ResponseWriter, r *http.Request) {
 		commit, err := git.GetLatestCommit(int64(req.AppId), userId)
 		if err != nil {
 			log.Error().Err(err).Int("app_id", req.AppId).Msg("Error getting latest commit")
-			handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "failed to get latest commit", err.Error())
+			// Check if it's a "no repository configured" error
+			errMsg := err.Error()
+			if errMsg == "no git repository configured for this application" {
+				handlers.SendResponse(w, http.StatusBadRequest, false, nil, "No git repository configured", "Please configure a git repository for this application before deploying")
+				return
+			}
+			handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "failed to get latest commit", errMsg)
 			return
 		}
 		commitHash = commit.SHA
