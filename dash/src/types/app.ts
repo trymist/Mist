@@ -59,6 +59,8 @@ export type EnvVariable = {
   appId: number;
   key: string;
   value: string;
+  runtime?: boolean;
+  buildtime?: boolean;
   createdAt: string;
   updatedAt: string;
 };
@@ -67,12 +69,16 @@ export type CreateEnvVariableRequest = {
   appId: number;
   key: string;
   value: string;
+  runtime?: boolean;
+  buildtime?: boolean;
 };
 
 export type UpdateEnvVariableRequest = {
   id: number;
   key: string;
   value: string;
+  runtime?: boolean;
+  buildtime?: boolean;
 };
 
 export type Domain = {

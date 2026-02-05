@@ -18,9 +18,11 @@ func CreateEnvVariable(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req struct {
-		AppID int64  `json:"appId"`
-		Key   string `json:"key"`
-		Value string `json:"value"`
+		AppID     int64  `json:"appId"`
+		Key       string `json:"key"`
+		Value     string `json:"value"`
+		Runtime   *bool  `json:"runtime,omitempty"`
+		Buildtime *bool  `json:"buildtime,omitempty"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -43,7 +45,7 @@ func CreateEnvVariable(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	env, err := models.CreateEnvVariable(req.AppID, strings.TrimSpace(req.Key), req.Value)
+	env, err := models.CreateEnvVariableWithType(req.AppID, strings.TrimSpace(req.Key), req.Value, req.Runtime, req.Buildtime)
 	if err != nil {
 		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to create environment variable", err.Error())
 		return
@@ -110,9 +112,11 @@ func UpdateEnvVariable(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req struct {
-		ID    int64  `json:"id"`
-		Key   string `json:"key"`
-		Value string `json:"value"`
+		ID        int64  `json:"id"`
+		Key       string `json:"key"`
+		Value     string `json:"value"`
+		Runtime   *bool  `json:"runtime,omitempty"`
+		Buildtime *bool  `json:"buildtime,omitempty"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -141,7 +145,7 @@ func UpdateEnvVariable(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = models.UpdateEnvVariable(req.ID, strings.TrimSpace(req.Key), req.Value)
+	err = models.UpdateEnvVariableWithType(req.ID, strings.TrimSpace(req.Key), req.Value, req.Runtime, req.Buildtime)
 	if err != nil {
 		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to update environment variable", err.Error())
 		return

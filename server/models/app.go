@@ -284,12 +284,13 @@ func GetAppCloneURL(appID int64, userID int64) (string, string, bool, error) {
 }
 
 func GetCloneUrlfromAppID(appID int64) (*string, error) {
-	var URL string
-	if err := db.Model(&App{}).Select("git_clone_url").Where("id = ?", appID).Take(&URL).Error; err != nil {
-		fmt.Printf(err.Error(), "eror getting clone git_clone_url")
+	var result struct {
+		GitCloneURL *string `gorm:"column:git_clone_url"`
+	}
+	if err := db.Model(&App{}).Select("git_clone_url").Where("id = ?", appID).Take(&result).Error; err != nil {
 		return nil, err
 	}
-	return &URL, nil
+	return result.GitCloneURL, nil
 }
 
 func GetGitProviderNameByAppID(

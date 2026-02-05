@@ -7,22 +7,41 @@ import (
 )
 
 type EnvVariable struct {
-	ID int64 `gorm:"primaryKey;autoIncrement:false" json:"id"`
-
-	AppID int64 `gorm:"uniqueIndex:idx_app_key;index;not null;constraint:OnDelete:CASCADE" json:"appId"`
-
-	Key string `gorm:"uniqueIndex:idx_app_key;not null" json:"key"`
-
-	Value string `gorm:"not null" json:"value"`
-
-	IsSecret bool `gorm:"default:false" json:"isSecret,omitempty"`
-
+	ID        int64     `gorm:"primaryKey;autoIncrement:false" json:"id"`
+	AppID     int64     `gorm:"uniqueIndex:idx_app_key;index;not null;constraint:OnDelete:CASCADE" json:"appId"`
+	Key       string    `gorm:"uniqueIndex:idx_app_key;not null" json:"key"`
+	Value     string    `gorm:"not null" json:"value"`
+	IsSecret  bool      `gorm:"default:false" json:"isSecret,omitempty"`
+	Runtime   *bool     `gorm:"default:false" json:"runtime,omitempty"`
+	Buildtime *bool     `gorm:"default:false" json:"buildtime,omitempty"`
 	CreatedAt time.Time `gorm:"autoCreateTime" json:"createdAt"`
 	UpdatedAt time.Time `gorm:"autoUpdateTime" json:"updatedAt"`
 }
 
 func (EnvVariable) TableName() string {
 	return "envs"
+}
+
+func (E *EnvVariable) IsRuntime() bool {
+	if E.Runtime == nil {
+		if E.Buildtime == nil {
+			return true
+		} else {
+			return false
+		}
+	}
+	return true
+}
+
+func (E *EnvVariable) IsBuildtime() bool {
+	if E.Buildtime == nil {
+		return false
+	} else {
+		if *E.Buildtime == true {
+			return true
+		}
+	}
+	return false
 }
 
 func CreateEnvVariable(appID int64, key, value string) (*EnvVariable, error) {
@@ -67,94 +86,45 @@ func GetEnvVariableByID(id int64) (*EnvVariable, error) {
 	return &env, nil
 }
 
-//##########################################################################################################
-//ARCHIVED CODE BELOW
+func CreateEnvVariableWithType(appID int64, key, value string, runtime, buildtime *bool) (*EnvVariable, error) {
+	env := &EnvVariable{
+		ID:    utils.GenerateRandomId(),
+		AppID: appID,
+		Key:   key,
+		Value: value,
+	}
 
-// package models
+	if runtime == nil && buildtime == nil {
+		defaultRuntime := true
+		runtime = &defaultRuntime
+	}
 
-// import (
-// 	"time"
+	if runtime != nil {
+		env.Runtime = runtime
+	}
+	if buildtime != nil {
+		env.Buildtime = buildtime
+	}
 
-// 	"github.com/corecollectives/mist/utils"
-// )
+	result := db.Create(env)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return env, nil
+}
 
-// type EnvVariable struct {
-// 	ID        int64     `json:"id"`
-// 	AppID     int64     `json:"appId"`
-// 	Key       string    `json:"key"`
-// 	Value     string    `json:"value"`
-// 	CreatedAt time.Time `json:"createdAt"`
-// 	UpdatedAt time.Time `json:"updatedAt"`
-// }
+func UpdateEnvVariableWithType(id int64, key, value string, runtime, buildtime *bool) error {
+	updates := map[string]interface{}{
+		"key":   key,
+		"value": value,
+	}
 
-// func CreateEnvVariable(appID int64, key, value string) (*EnvVariable, error) {
-// 	id := utils.GenerateRandomId()
-// 	query := `
-// 		INSERT INTO envs (id, app_id, key, value, created_at, updated_at)
-// 		VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-// 		RETURNING id, app_id, key, value, created_at, updated_at
-// 	`
-// 	var env EnvVariable
-// 	err := db.QueryRow(query, id, appID, key, value).Scan(
-// 		&env.ID, &env.AppID, &env.Key, &env.Value, &env.CreatedAt, &env.UpdatedAt,
-// 	)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	return &env, nil
-// }
+	if runtime != nil {
+		updates["runtime"] = *runtime
+	}
+	if buildtime != nil {
+		updates["buildtime"] = *buildtime
+	}
 
-// func GetEnvVariablesByAppID(appID int64) ([]EnvVariable, error) {
-// 	query := `
-// 		SELECT id, app_id, key, value, created_at, updated_at
-// 		FROM envs
-// 		WHERE app_id = ?
-// 		ORDER BY key ASC
-// 	`
-// 	rows, err := db.Query(query, appID)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	defer rows.Close()
-
-// 	var envs []EnvVariable
-// 	for rows.Next() {
-// 		var env EnvVariable
-// 		err := rows.Scan(&env.ID, &env.AppID, &env.Key, &env.Value, &env.CreatedAt, &env.UpdatedAt)
-// 		if err != nil {
-// 			return nil, err
-// 		}
-// 		envs = append(envs, env)
-// 	}
-// 	return envs, nil
-// }
-
-// func UpdateEnvVariable(id int64, key, value string) error {
-// 	query := `
-// 		UPDATE envs
-// 		SET key = ?, value = ?, updated_at = CURRENT_TIMESTAMP
-// 		WHERE id = ?
-// 	`
-// 	_, err := db.Exec(query, key, value, id)
-// 	return err
-// }
-
-// func DeleteEnvVariable(id int64) error {
-// 	query := `DELETE FROM envs WHERE id = ?`
-// 	_, err := db.Exec(query, id)
-// 	return err
-// }
-
-// func GetEnvVariableByID(id int64) (*EnvVariable, error) {
-// 	query := `
-// 		SELECT id, app_id, key, value, created_at, updated_at
-// 		FROM envs
-// 		WHERE id = ?
-// 	`
-// 	var env EnvVariable
-// 	err := db.QueryRow(query, id).Scan(&env.ID, &env.AppID, &env.Key, &env.Value, &env.CreatedAt, &env.UpdatedAt)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	return &env, nil
-// }
+	return db.Model(&EnvVariable{ID: id}).Updates(updates).Error
+}

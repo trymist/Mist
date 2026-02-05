@@ -15,18 +15,20 @@ import (
 func GetLatestCommit(appID int64, userID int64) (*models.LatestCommit, error) {
 	gitProvider, err := models.GetGitProviderNameByAppID(appID)
 	if err != nil {
-		fmt.Printf("error getting provider name by app id", err.Error())
-		return nil, err
+		return nil, fmt.Errorf("failed to get git provider: %w", err)
 	}
 
 	gitCloneUrl, err := models.GetCloneUrlfromAppID(appID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get repository information: %w", err)
 	}
+
+	if gitProvider == nil && gitCloneUrl == nil {
+		return nil, fmt.Errorf("no git repository configured for this application")
+	}
+
 	if gitProvider == nil && gitCloneUrl != nil {
 		return latestRemoteCommit(*gitCloneUrl)
-	} else if gitProvider == nil && gitCloneUrl == nil {
-		return nil, fmt.Errorf("git url or provider not given")
 	}
 
 	if *gitProvider == models.GitProviderGitHub {

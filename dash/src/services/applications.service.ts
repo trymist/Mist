@@ -99,7 +99,7 @@ export const applicationsService = {
     return data.data;
   },
 
-  async createEnvVariable(request: { appId: number; key: string; value: string }) {
+  async createEnvVariable(request: { appId: number; key: string; value: string; runtime?: boolean; buildtime?: boolean }) {
     const response = await fetch(`${API_BASE}/apps/envs/create`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -131,7 +131,7 @@ export const applicationsService = {
     return data.data || [];
   },
 
-  async updateEnvVariable(request: { id: number; key: string; value: string }) {
+  async updateEnvVariable(request: { id: number; key: string; value: string; runtime?: boolean; buildtime?: boolean }) {
     const response = await fetch(`${API_BASE}/apps/envs/update`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
