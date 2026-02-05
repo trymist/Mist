@@ -147,7 +147,7 @@ func migrateDbInternal(dbInstance *gorm.DB) error {
 	// NOTE: should be changed with every new update, or it will break
 	var Version = models.SystemSettingEntry{
 		Key:   "version",
-		Value: "1.0.5",
+		Value: "1.0.6",
 	}
 
 	// templates of prebuild database/queues which can be deployed as an application
