@@ -12,7 +12,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-func BuildImage(ctx context.Context, imageTag, contextPath string, envVars map[string]string, logfile *os.File) error {
+func BuildDockerImageWithBuildArgs(ctx context.Context, imageTag, contextPath string, buildArgs map[string]string, logfile *os.File) error {
 	timeoutCtx, cancel := context.WithTimeout(ctx, 15*time.Minute)
 	defer cancel()
 	cli, err := client.New(client.FromEnv)
@@ -28,18 +28,18 @@ func BuildImage(ctx context.Context, imageTag, contextPath string, envVars map[s
 	}
 	var tags []string
 	tags = append(tags, imageTag)
-	env := make(map[string]*string)
-	for k, v := range envVars {
+	buildArgsMap := make(map[string]*string)
+	for k, v := range buildArgs {
 		val := v
-		env[k] = &val
+		buildArgsMap[k] = &val
 	}
 	buildOptions := client.ImageBuildOptions{
 		Tags:      tags,
 		Remove:    true,
-		BuildArgs: env,
+		BuildArgs: buildArgsMap,
 	}
 
-	log.Info().Str("image_tag", imageTag).Msg("Building Docker image")
+	log.Info().Str("image_tag", imageTag).Int("build_args_count", len(buildArgs)).Msg("Building Docker image with build-time arguments")
 
 	resp, err := cli.ImageBuild(timeoutCtx, buildCtx, buildOptions)
 	if err != nil {
@@ -58,40 +58,9 @@ func BuildImage(ctx context.Context, imageTag, contextPath string, envVars map[s
 	}
 	return nil
 
-	// legacy exec method
-	//
-	//
-	// buildArgs := []string{"build", "-t", imageTag}
-	//
-	// for key, value := range envVars {
-	// 	buildArgs = append(buildArgs, "--build-arg", fmt.Sprintf("%s=%s", key, value))
-	// }
-	//
-	// buildArgs = append(buildArgs, contextPath)
-	//
-	// log.Debug().Strs("build_args", buildArgs).Str("image_tag", imageTag).Msg("Building Docker image")
-	//
-	// ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
-	// defer cancel()
-	//
-	// cmd := exec.CommandContext(ctx, "docker", buildArgs...)
-	// cmd.Stdout = logfile
-	// cmd.Stderr = logfile
-	//
-	// if err := cmd.Run(); err != nil {
-	// 	if ctx.Err() == context.DeadlineExceeded {
-	// 		return fmt.Errorf("docker build timed out after 15 minutes")
-	// 	}
-	// 	exitCode := -1
-	// 	if exitErr, ok := err.(*exec.ExitError); ok {
-	// 		exitCode = exitErr.ExitCode()
-	// 	}
-	// 	return fmt.Errorf("docker build failed with exit code %d: %w", exitCode, err)
-	// }
-	// return nil
 }
 
-func PullDockerImage(ctx context.Context, imageName string, logfile *os.File) error {
+func PullPrebuiltDockerImage(ctx context.Context, imageName string, logfile *os.File) error {
 	timeoutCtx, cancel := context.WithTimeout(ctx, 15*time.Minute)
 	defer cancel()
 
@@ -118,22 +87,4 @@ func PullDockerImage(ctx context.Context, imageName string, logfile *os.File) er
 	}
 	return nil
 
-	// legacy exec method
-	//
-	//
-	// pullCmd := exec.CommandContext(ctx, "docker", "pull", imageName)
-	// pullCmd.Stdout = logfile
-	// pullCmd.Stderr = logfile
-	//
-	// if err := pullCmd.Run(); err != nil {
-	// 	if ctx.Err() == context.DeadlineExceeded {
-	// 		return fmt.Errorf("docker pull timed out after 15 minutes for image %s", imageName)
-	// 	}
-	// 	exitCode := -1
-	// 	if exitErr, ok := err.(*exec.ExitError); ok {
-	// 		exitCode = exitErr.ExitCode()
-	// 	}
-	// 	return fmt.Errorf("docker pull failed with exit code %d: %w", exitCode, err)
-	// }
-	// return nil
 }

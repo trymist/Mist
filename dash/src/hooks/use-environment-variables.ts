@@ -13,8 +13,8 @@ interface UseEnvironmentVariablesReturn {
   loading: boolean;
   error: string | null;
   fetchEnvVars: () => Promise<void>;
-  createEnvVar: (key: string, value: string) => Promise<EnvVariable | null>;
-  updateEnvVar: (id: number, key: string, value: string) => Promise<EnvVariable | null>;
+  createEnvVar: (key: string, value: string, runtime?: boolean, buildtime?: boolean) => Promise<EnvVariable | null>;
+  updateEnvVar: (id: number, key: string, value: string, runtime?: boolean, buildtime?: boolean) => Promise<EnvVariable | null>;
   deleteEnvVar: (id: number) => Promise<boolean>;
   refreshEnvVars: () => Promise<void>;
 }
@@ -42,9 +42,9 @@ export const useEnvironmentVariables = (options: UseEnvironmentVariablesOptions)
     }
   }, [appId]);
 
-  const createEnvVar = useCallback(async (key: string, value: string): Promise<EnvVariable | null> => {
+  const createEnvVar = useCallback(async (key: string, value: string, runtime: boolean = true, buildtime: boolean = false): Promise<EnvVariable | null> => {
     try {
-      const response = await applicationsService.createEnvVariable({ appId, key, value });
+      const response = await applicationsService.createEnvVariable({ appId, key, value, runtime, buildtime });
       // The backend now returns { envVariable, actionRequired, actionMessage }
       const envVar = response?.envVariable || response;
       if (envVar) {
@@ -59,9 +59,9 @@ export const useEnvironmentVariables = (options: UseEnvironmentVariablesOptions)
     }
   }, [appId]);
 
-  const updateEnvVar = useCallback(async (id: number, key: string, value: string): Promise<EnvVariable | null> => {
+  const updateEnvVar = useCallback(async (id: number, key: string, value: string, runtime?: boolean, buildtime?: boolean): Promise<EnvVariable | null> => {
     try {
-      const response = await applicationsService.updateEnvVariable({ id, key, value });
+      const response = await applicationsService.updateEnvVariable({ id, key, value, runtime, buildtime });
       // The backend now returns { envVariable, actionRequired, actionMessage }
       const updatedVar = response?.envVariable || response;
       if (updatedVar) {

@@ -73,7 +73,7 @@ func GetCompletedDeploymentLogsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	logPath := docker.GetLogsPath(dep.CommitHash, depId)
+	logPath := docker.GetBuildLogsPath(dep.CommitHash, depId)
 	logContent := ""
 
 	if _, err := os.Stat(logPath); err == nil {

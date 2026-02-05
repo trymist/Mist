@@ -118,7 +118,7 @@ func (q *Queue) HandleWork(id int64, db *gorm.DB) {
 		path := fmt.Sprintf("/var/lib/mist/projects/%d/apps/%s", app.ProjectID, app.Name)
 		err = compose.DeployComposeApp(ctx, dep, app, path, db, logFile, logger)
 	} else {
-		_, err = docker.DeployerMain(ctx, id, db, logFile, logger)
+		_, err = docker.ExecuteDeploymentWorkflow(ctx, id, db, logFile, logger)
 	}
 	if err != nil {
 		if ctx.Err() == context.Canceled {

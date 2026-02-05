@@ -45,7 +45,7 @@ func LogsHandler(w http.ResponseWriter, r *http.Request) {
 		return nil
 	})
 
-	logPath := docker.GetLogsPath(dep.CommitHash, depId)
+	logPath := docker.GetBuildLogsPath(dep.CommitHash, depId)
 	ctx, cancel := context.WithCancel(r.Context())
 	defer cancel()
 
