@@ -16,6 +16,8 @@ export type App = {
   gitCloneUrl: string | null;
   deploymentStrategy: string;
   port: number | null;
+  shouldExpose: boolean | null;
+  exposePort: number | null;
   rootDirectory: string;
   buildCommand: string | null;
   startCommand: string | null;
@@ -39,6 +41,8 @@ export type CreateAppRequest = {
   gitRepository?: string;
   gitBranch?: string;
   port?: number;
+  shouldExpose?: boolean;
+  exposePort?: number;
   rootDirectory?: string;
   buildCommand?: string;
   startCommand?: string;
@@ -55,6 +59,8 @@ export type EnvVariable = {
   appId: number;
   key: string;
   value: string;
+  runtime?: boolean;
+  buildtime?: boolean;
   createdAt: string;
   updatedAt: string;
 };
@@ -63,12 +69,16 @@ export type CreateEnvVariableRequest = {
   appId: number;
   key: string;
   value: string;
+  runtime?: boolean;
+  buildtime?: boolean;
 };
 
 export type UpdateEnvVariableRequest = {
   id: number;
   key: string;
   value: string;
+  runtime?: boolean;
+  buildtime?: boolean;
 };
 
 export type Domain = {

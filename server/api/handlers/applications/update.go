@@ -31,8 +31,12 @@ func UpdateApplication(w http.ResponseWriter, r *http.Request) {
 		GitBranch          *string  `json:"gitBranch"`
 		GitCloneURL        *string  `json:"gitCloneUrl"`
 		Port               *int     `json:"port"`
+		ShouldExpose       *bool    `json:"shouldExpose"`
+		ExposePort         *int     `json:"exposePort"`
 		RootDirectory      *string  `json:"rootDirectory"`
 		DockerfilePath     *string  `json:"dockerfilePath"`
+		BuildCommand       *string  `json:"buildCommand"`
+		StartCommand       *string  `json:"startCommand"`
 		DeploymentStrategy *string  `json:"deploymentStrategy"`
 		Status             *string  `json:"status"`
 		CPULimit           *float64 `json:"cpuLimit"`
@@ -95,6 +99,13 @@ func UpdateApplication(w http.ResponseWriter, r *http.Request) {
 		port := int64(*req.Port)
 		app.Port = &port
 	}
+	if req.ShouldExpose != nil {
+		app.ShouldExpose = req.ShouldExpose
+	}
+	if req.ExposePort != nil {
+		exposePort := int64(*req.ExposePort)
+		app.ExposePort = &exposePort
+	}
 	if req.RootDirectory != nil {
 		app.RootDirectory = strings.TrimSpace(*req.RootDirectory)
 	}
@@ -125,17 +136,11 @@ func UpdateApplication(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	runtimeSettingsChanged := req.CPULimit != nil || req.MemoryLimit != nil || req.RestartPolicy != nil
+	redeployRequired := req.RootDirectory != nil || req.DockerfilePath != nil ||
+		req.BuildCommand != nil || req.StartCommand != nil
 
-	if runtimeSettingsChanged {
-		go func() {
-			if err := recreateContainerAsync(app.ID); err != nil {
-				models.LogUserAudit(userInfo.ID, "error", "container_recreate", &app.ID, map[string]interface{}{
-					"error": err.Error(),
-				})
-			}
-		}()
-	}
+	restartRequired := req.Port != nil || req.ShouldExpose != nil || req.ExposePort != nil ||
+		req.CPULimit != nil || req.MemoryLimit != nil || req.RestartPolicy != nil
 
 	changes := make(map[string]interface{})
 	if req.Name != nil {
@@ -156,6 +161,12 @@ func UpdateApplication(w http.ResponseWriter, r *http.Request) {
 	if req.Port != nil {
 		changes["port"] = *req.Port
 	}
+	if req.ShouldExpose != nil {
+		changes["shouldExpose"] = *req.ShouldExpose
+	}
+	if req.ExposePort != nil {
+		changes["exposePort"] = *req.ExposePort
+	}
 	if req.Status != nil {
 		changes["status"] = *req.Status
 	}
@@ -163,7 +174,16 @@ func UpdateApplication(w http.ResponseWriter, r *http.Request) {
 		"changes": changes,
 	})
 
-	handlers.SendResponse(w, http.StatusOK, true, app.ToJson(), "Application updated successfully", "")
+	response := app.ToJson()
+	if redeployRequired {
+		response["actionRequired"] = "redeploy"
+		response["actionMessage"] = "These build configuration changes require a full redeployment. Would you like to redeploy now?"
+	} else if restartRequired {
+		response["actionRequired"] = "restart"
+		response["actionMessage"] = "These runtime configuration changes require restarting the container. Would you like to restart now?"
+	}
+
+	handlers.SendResponse(w, http.StatusOK, true, response, "Application updated successfully", "")
 }
 
 func recreateContainerAsync(appID int64) error {

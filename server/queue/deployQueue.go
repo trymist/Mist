@@ -1,3 +1,5 @@
+// the main queue maintaning the deployments
+
 package queue
 
 import (

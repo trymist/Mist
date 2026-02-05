@@ -44,9 +44,13 @@ export const useDomains = (options: UseDomainsOptions): UseDomainsReturn => {
 
   const createDomain = useCallback(async (domain: string): Promise<Domain | null> => {
     try {
-      const newDomain = await applicationsService.createDomain({ appId, domain });
-      setDomains(prev => [...prev, newDomain]);
-      toast.success('Domain added');
+      const response = await applicationsService.createDomain({ appId, domain });
+      // The backend now returns { domain, actionRequired, actionMessage }
+      const newDomain = response?.domain || response;
+      if (newDomain) {
+        setDomains(prev => [...prev, newDomain]);
+        toast.success('Domain added');
+      }
       return newDomain;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to add domain';
@@ -57,9 +61,13 @@ export const useDomains = (options: UseDomainsOptions): UseDomainsReturn => {
 
   const updateDomain = useCallback(async (id: number, domain: string): Promise<Domain | null> => {
     try {
-      const updatedDomain = await applicationsService.updateDomain({ id, domain });
-      setDomains(prev => prev.map(d => d.id === id ? updatedDomain : d));
-      toast.success('Domain updated');
+      const response = await applicationsService.updateDomain({ id, domain });
+      // The backend now returns { domain, actionRequired, actionMessage }
+      const updatedDomain = response?.domain || response;
+      if (updatedDomain) {
+        setDomains(prev => prev.map(d => d.id === id ? updatedDomain : d));
+        toast.success('Domain updated');
+      }
       return updatedDomain;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to update domain';

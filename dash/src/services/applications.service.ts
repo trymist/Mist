@@ -58,7 +58,10 @@ export const applicationsService = {
     return data.data;
   },
 
-  async update(appId: number, updates: UpdateAppRequest): Promise<App> {
+  async update(appId: number, updates: UpdateAppRequest): Promise<App & {
+    actionRequired: string,
+    actionMessage: string
+  }> {
     const response = await fetch(`${API_BASE}/apps/update`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -96,7 +99,7 @@ export const applicationsService = {
     return data.data;
   },
 
-  async createEnvVariable(request: { appId: number; key: string; value: string }) {
+  async createEnvVariable(request: { appId: number; key: string; value: string; runtime?: boolean; buildtime?: boolean }) {
     const response = await fetch(`${API_BASE}/apps/envs/create`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -128,7 +131,7 @@ export const applicationsService = {
     return data.data || [];
   },
 
-  async updateEnvVariable(request: { id: number; key: string; value: string }) {
+  async updateEnvVariable(request: { id: number; key: string; value: string; runtime?: boolean; buildtime?: boolean }) {
     const response = await fetch(`${API_BASE}/apps/envs/update`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -314,6 +317,20 @@ export const applicationsService = {
     return data.data;
   },
 
+  async recreateContainer(appId: number): Promise<{ message: string }> {
+    const response = await fetch(`${API_BASE}/apps/container/recreate?appId=${appId}`, {
+      method: 'POST',
+      credentials: 'include',
+    });
+
+    const data = await response.json();
+    if (!data.success) {
+      throw new Error(data.error || 'Failed to recreate container');
+    }
+
+    return data.data;
+  },
+
   async getContainerStatus(appId: number) {
     const response = await fetch(`${API_BASE}/apps/container/status?appId=${appId}`, {
       method: 'GET',
@@ -414,5 +431,21 @@ export const applicationsService = {
     if (!data.success) {
       throw new Error(data.error || 'Failed to delete application');
     }
+  },
+
+  async redeploy(appId: number): Promise<{ deploymentId: number; message: string }> {
+    const response = await fetch(`${API_BASE}/deployments/create`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ appId }),
+    });
+
+    const data = await response.json();
+    if (!data.id) {
+      throw new Error(data.error || 'Failed to trigger redeployment');
+    }
+
+    return data.data;
   },
 };

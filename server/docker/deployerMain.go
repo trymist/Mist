@@ -12,16 +12,16 @@ import (
 	"gorm.io/gorm"
 )
 
-func DeployerMain(ctx context.Context, Id int64, db *gorm.DB, logFile *os.File, logger *utils.DeploymentLogger) (string, error) {
-	dep, err := LoadDeployment(Id, db)
+func ExecuteDeploymentWorkflow(ctx context.Context, deploymentId int64, db *gorm.DB, logFile *os.File, logger *utils.DeploymentLogger) (string, error) {
+	dep, err := LoadDeployment(deploymentId, db)
 	if err != nil {
 		logger.Error(err, "Failed to load deployment")
 		return "", fmt.Errorf("failed to load deployment: %w", err)
 	}
 
 	var appId int64
-	// err = db.QueryRow("SELECT app_id FROM deployments WHERE id = ?", Id).Scan(&appId)
-	err = db.Table("deployments").Select("app_id").Where("id = ?", Id).Take(&appId).Error
+	// err = db.QueryRow("SELECT app_id FROM deployments WHERE id = ?", deploymentId).Scan(&appId)
+	err = db.Table("deployments").Select("app_id").Where("id = ?", deploymentId).Take(&appId).Error
 
 	if err != nil {
 		logger.Error(err, "Failed to get app_id")
@@ -45,7 +45,7 @@ func DeployerMain(ctx context.Context, Id int64, db *gorm.DB, logFile *os.File, 
 	imageTag := dep.CommitHash
 	containerName := fmt.Sprintf("app-%d", app.ID)
 
-	err = DeployApp(ctx, dep, &app, appContextPath, imageTag, containerName, db, logFile, logger)
+	err = ExecuteContainerDeployment(ctx, dep, &app, appContextPath, imageTag, containerName, db, logFile, logger)
 	if err != nil {
 		if ctx.Err() == context.Canceled {
 			logger.Info("Deployment cancelled by user")
@@ -56,7 +56,7 @@ func DeployerMain(ctx context.Context, Id int64, db *gorm.DB, logFile *os.File, 
 		dep.Stage = "failed"
 		errMsg := err.Error()
 		dep.ErrorMessage = &errMsg
-		UpdateDeployment(dep, db)
+		UpdateDeploymentRecord(dep, db)
 		return "", err
 	}
 

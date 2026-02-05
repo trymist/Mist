@@ -4,6 +4,27 @@ All notable changes to this project will be documented in this file.
 The format is based on Keep a Changelog,
 and this project adheres to Semantic Versioning.
 
+## [unreleased]
+
+### Added 
+- github deployment
+- expose port
+
+### Changed
+- better restart on app settings change
+
+## [1.0.5] - 2026-01-31
+
+### Added 
+- public git url as source
+- docker compose support (experimental)
+- hide/show env variables
+
+### Fixed
+- deployment with dockerfile in children of root directory
+- template entry in db on startup
+- audit-log no username
+
 ## [1.0.4] - 2026-01-20
 
 ### Added 

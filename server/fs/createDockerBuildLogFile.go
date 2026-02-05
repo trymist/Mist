@@ -11,6 +11,8 @@ import (
 
 var logPath string = constants.Constants["LogPath"].(string)
 
+// helper function to create build log file
+// build logs files are located in `/var/lib/mist/logs/{dep-commit-hash + appID + _build_logs}`
 func CreateDockerBuildLogFile(depID int64) (*os.File, string, error) {
 	commitHash, err := models.GetCommitHashByDeploymentID(depID)
 	if err != nil {

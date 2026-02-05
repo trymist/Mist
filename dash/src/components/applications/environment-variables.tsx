@@ -4,9 +4,12 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Trash2, Plus, Pencil, X, Check, FileText, Info, Eye, EyeOff } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Trash2, Plus, Pencil, X, Check, FileText, Info, Eye, EyeOff, AlertTriangle, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { useEnvironmentVariables } from "@/hooks";
+import { applicationsService } from "@/services";
 import type { EnvVariable } from "@/types";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
@@ -22,9 +25,13 @@ export const EnvironmentVariables = ({ appId }: EnvironmentVariablesProps) => {
 
   const [newKey, setNewKey] = useState("");
   const [newValue, setNewValue] = useState("");
+  const [newRuntime, setNewRuntime] = useState(true);
+  const [newBuildtime, setNewBuildtime] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editKey, setEditKey] = useState("");
   const [editValue, setEditValue] = useState("");
+  const [editRuntime, setEditRuntime] = useState(true);
+  const [editBuildtime, setEditBuildtime] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
   const [bulkMode, setBulkMode] = useState(false);
   const [bulkText, setBulkText] = useState("");
@@ -33,6 +40,9 @@ export const EnvironmentVariables = ({ appId }: EnvironmentVariablesProps) => {
   const [showNewValue, setShowNewValue] = useState(false);
   const [showEditValue, setShowEditValue] = useState(false);
   const [visibleVarIds, setVisibleVarIds] = useState<Set<number>>(new Set());
+
+  // Dialog state for redeployment
+  const [actionDialogOpen, setActionDialogOpen] = useState(false);
 
   const parseEnvText = (text: string) => {
     const lines = text.split('\n').filter(line => line.trim());
@@ -79,6 +89,26 @@ export const EnvironmentVariables = ({ appId }: EnvironmentVariablesProps) => {
     }
   };
 
+  const showRedeployDialog = () => {
+    setActionDialogOpen(true);
+  };
+
+  const handleRedeploy = async () => {
+    try {
+      setActionDialogOpen(false);
+      toast.info("Starting full redeployment (this may take several minutes)...");
+      await applicationsService.redeploy(appId);
+      toast.success("Redeployment started - environment variables will be applied");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to trigger redeployment");
+    }
+  };
+
+  const handleSkipRedeploy = () => {
+    setActionDialogOpen(false);
+    toast.info("Environment variable changes will take effect on next redeployment");
+  };
+
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newKey.trim()) {
@@ -86,12 +116,22 @@ export const EnvironmentVariables = ({ appId }: EnvironmentVariablesProps) => {
       return;
     }
 
-    const result = await createEnvVar(newKey.trim(), newValue);
+    // Validate that at least one checkbox is selected
+    if (!newRuntime && !newBuildtime) {
+      toast.error("At least one of 'Runtime' or 'Buildtime' must be selected");
+      return;
+    }
+
+    const result = await createEnvVar(newKey.trim(), newValue, newRuntime, newBuildtime);
     if (result) {
       setNewKey("");
       setNewValue("");
+      setNewRuntime(true);
+      setNewBuildtime(false);
       setShowNewValue(false);
       setShowAddForm(false);
+      // Show redeploy dialog since env vars require full redeployment
+      showRedeployDialog();
     }
   };
 
@@ -120,6 +160,8 @@ export const EnvironmentVariables = ({ appId }: EnvironmentVariablesProps) => {
 
     if (successCount > 0) {
       toast.success(`Added ${successCount} environment variable${successCount > 1 ? 's' : ''}`);
+      // Show redeploy dialog since env vars require full redeployment
+      showRedeployDialog();
     }
     if (failCount > 0) {
       toast.error(`Failed to add ${failCount} variable${failCount > 1 ? 's' : ''}`);
@@ -137,9 +179,17 @@ export const EnvironmentVariables = ({ appId }: EnvironmentVariablesProps) => {
       return;
     }
 
-    const result = await updateEnvVar(id, editKey.trim(), editValue);
+    // Validate that at least one checkbox is selected
+    if (!editRuntime && !editBuildtime) {
+      toast.error("At least one of 'Runtime' or 'Buildtime' must be selected");
+      return;
+    }
+
+    const result = await updateEnvVar(id, editKey.trim(), editValue, editRuntime, editBuildtime);
     if (result) {
       setEditingId(null);
+      // Show redeploy dialog since env vars require full redeployment
+      showRedeployDialog();
     }
   };
 
@@ -147,13 +197,20 @@ export const EnvironmentVariables = ({ appId }: EnvironmentVariablesProps) => {
     if (!confirm("Are you sure you want to delete this environment variable?")) {
       return;
     }
-    await deleteEnvVar(id);
+    const result = await deleteEnvVar(id);
+    if (result) {
+      // Show redeploy dialog since env vars require full redeployment
+      showRedeployDialog();
+    }
   };
 
   const startEdit = (env: EnvVariable) => {
     setEditingId(env.id);
     setEditKey(env.key);
     setEditValue(env.value);
+    // Default to runtime=true if not specified (backward compatibility)
+    setEditRuntime(env.runtime !== false);
+    setEditBuildtime(env.buildtime === true);
     setShowEditValue(false);
   };
 
@@ -161,6 +218,8 @@ export const EnvironmentVariables = ({ appId }: EnvironmentVariablesProps) => {
     setEditingId(null);
     setEditKey("");
     setEditValue("");
+    setEditRuntime(true);
+    setEditBuildtime(false);
   };
 
   const toggleVisibility = (id: number) => {
@@ -274,6 +333,28 @@ export const EnvironmentVariables = ({ appId }: EnvironmentVariablesProps) => {
                         )}
                       </Button>
                     </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-6 py-2">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="new-runtime"
+                      checked={newRuntime}
+                      onCheckedChange={(checked) => setNewRuntime(checked as boolean)}
+                    />
+                    <Label htmlFor="new-runtime" className="text-sm font-normal cursor-pointer">
+                      Runtime
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="new-buildtime"
+                      checked={newBuildtime}
+                      onCheckedChange={(checked) => setNewBuildtime(checked as boolean)}
+                    />
+                    <Label htmlFor="new-buildtime" className="text-sm font-normal cursor-pointer">
+                      Buildtime
+                    </Label>
                   </div>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-2">
@@ -406,6 +487,28 @@ export const EnvironmentVariables = ({ appId }: EnvironmentVariablesProps) => {
                         </div>
                       </div>
                     </div>
+                    <div className="flex items-center gap-6 py-2">
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`edit-runtime-${env.id}`}
+                          checked={editRuntime}
+                          onCheckedChange={(checked) => setEditRuntime(checked as boolean)}
+                        />
+                        <Label htmlFor={`edit-runtime-${env.id}`} className="text-sm font-normal cursor-pointer">
+                          Runtime
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`edit-buildtime-${env.id}`}
+                          checked={editBuildtime}
+                          onCheckedChange={(checked) => setEditBuildtime(checked as boolean)}
+                        />
+                        <Label htmlFor={`edit-buildtime-${env.id}`} className="text-sm font-normal cursor-pointer">
+                          Buildtime
+                        </Label>
+                      </div>
+                    </div>
                     <div className="flex flex-col sm:flex-row gap-2">
                       <Button size="sm" onClick={() => handleUpdate(env.id)} className="w-full sm:w-auto">
                         <Check className="h-4 w-4 mr-2" />
@@ -419,7 +522,7 @@ export const EnvironmentVariables = ({ appId }: EnvironmentVariablesProps) => {
                   </div>
                 ) : (
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                    <div className="flex-1 font-mono break-all flex items-center gap-2">
+                    <div className="flex-1 font-mono break-all flex items-center gap-2 flex-wrap">
                       <span className="font-semibold">{env.key}</span>
                       <span className="text-muted-foreground">=</span>
                       <span className="text-muted-foreground">
@@ -437,6 +540,18 @@ export const EnvironmentVariables = ({ appId }: EnvironmentVariablesProps) => {
                           <Eye className="h-3 w-3" />
                         )}
                       </Button>
+                      <div className="flex items-center gap-1">
+                        {(env.runtime !== false) && (
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                            R
+                          </span>
+                        )}
+                        {env.buildtime && (
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                            B
+                          </span>
+                        )}
+                      </div>
                     </div>
                     <div className="flex gap-2 self-end sm:self-auto">
                       <Button
@@ -461,6 +576,31 @@ export const EnvironmentVariables = ({ appId }: EnvironmentVariablesProps) => {
           </div>
         )}
       </CardContent>
+
+      {/* Redeploy Dialog */}
+      <Dialog open={actionDialogOpen} onOpenChange={setActionDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-yellow-500" />
+              Redeployment Required
+            </DialogTitle>
+            <DialogDescription>
+              Environment variable changes require a full redeployment to take effect.
+              Would you like to redeploy now?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex gap-2 sm:justify-end">
+            <Button variant="outline" onClick={handleSkipRedeploy}>
+              Skip for Now
+            </Button>
+            <Button onClick={handleRedeploy} className="flex items-center gap-2">
+              <RefreshCw className="h-4 w-4" />
+              Redeploy Now
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 };

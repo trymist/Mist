@@ -223,13 +223,13 @@ if [ -d "$INSTALL_DIR/dash" ]; then
         error "Node.js not found. Install from: https://nodejs.org/"
         exit 1
     fi
-    if ! command -v npm >/dev/null 2>&1; then
-        error "npm not found"
+    if ! command -v bun>/dev/null 2>&1; then
+        error "bun not found"
         exit 1
     fi
     
-    run_step "Installing dashboard dependencies" "cd '$INSTALL_DIR/dash' && npm install" || exit 1
-    run_step "Building dashboard" "cd '$INSTALL_DIR/dash' && npm run build" || exit 1
+    run_step "Installing dashboard dependencies" "cd '$INSTALL_DIR/dash' && bun install" || exit 1
+    run_step "Building dashboard" "cd '$INSTALL_DIR/dash' && bun run build" || exit 1
     
     # Move build output to server/static
     DASH_BUILD_DIR="$INSTALL_DIR/dash/dist"

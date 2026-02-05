@@ -6,7 +6,6 @@ import (
 
 	"github.com/corecollectives/mist/api/handlers"
 	"github.com/corecollectives/mist/api/middleware"
-	"github.com/corecollectives/mist/docker"
 	"github.com/corecollectives/mist/models"
 )
 
@@ -128,20 +127,18 @@ func CreateVolume(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	go func() {
-		app, err := models.GetApplicationByID(req.AppID)
-		if err == nil {
-			docker.RecreateContainer(app)
-		}
-	}()
-
 	models.LogUserAudit(userInfo.ID, "create", "volume", &volume.ID, map[string]interface{}{
 		"app_id":         req.AppID,
 		"name":           req.Name,
 		"container_path": req.ContainerPath,
 	})
 
-	handlers.SendResponse(w, http.StatusCreated, true, volume.ToJson(), "Volume created successfully", "")
+	response := map[string]interface{}{
+		"volume":         volume.ToJson(),
+		"actionRequired": "restart",
+		"actionMessage":  "Volume changes require restarting the container to take effect. Would you like to restart now?",
+	}
+	handlers.SendResponse(w, http.StatusCreated, true, response, "Volume created successfully", "")
 }
 
 func UpdateVolume(w http.ResponseWriter, r *http.Request) {
@@ -194,19 +191,16 @@ func UpdateVolume(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	go func() {
-		app, err := models.GetApplicationByID(volume.AppID)
-		if err == nil {
-			docker.RecreateContainer(app)
-		}
-	}()
-
 	models.LogUserAudit(userInfo.ID, "update", "volume", &req.ID, map[string]interface{}{
 		"name":           req.Name,
 		"container_path": req.ContainerPath,
 	})
 
-	handlers.SendResponse(w, http.StatusOK, true, nil, "Volume updated successfully", "")
+	response := map[string]interface{}{
+		"actionRequired": "restart",
+		"actionMessage":  "Volume changes require restarting the container to take effect. Would you like to restart now?",
+	}
+	handlers.SendResponse(w, http.StatusOK, true, response, "Volume updated successfully", "")
 }
 
 func DeleteVolume(w http.ResponseWriter, r *http.Request) {
@@ -259,17 +253,14 @@ func DeleteVolume(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	go func() {
-		app, err := models.GetApplicationByID(volume.AppID)
-		if err == nil {
-			docker.RecreateContainer(app)
-		}
-	}()
-
 	models.LogUserAudit(userInfo.ID, "delete", "volume", &req.ID, map[string]interface{}{
 		"app_id": volume.AppID,
 		"name":   volume.Name,
 	})
 
-	handlers.SendResponse(w, http.StatusOK, true, nil, "Volume deleted successfully", "")
+	response := map[string]interface{}{
+		"actionRequired": "restart",
+		"actionMessage":  "Volume changes require restarting the container to take effect. Would you like to restart now?",
+	}
+	handlers.SendResponse(w, http.StatusOK, true, response, "Volume deleted successfully", "")
 }

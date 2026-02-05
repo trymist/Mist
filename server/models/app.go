@@ -47,6 +47,8 @@ type App struct {
 	GitCloneURL         *string            `json:"git_clone_url,omitempty"`
 	DeploymentStrategy  DeploymentStrategy `gorm:"default:'auto'" json:"deployment_strategy"`
 	Port                *int64             `json:"port,omitempty"`
+	ShouldExpose        *bool              `json:"shouldExpose,omitempty" gorm:"default:false"`
+	ExposePort          *int64             `json:"exposePort,omitempty"`
 	RootDirectory       string             `gorm:"default:'.'" json:"root_directory,omitempty"`
 	BuildCommand        *string            `json:"build_command,omitempty"`
 	StartCommand        *string            `json:"start_command,omitempty"`
@@ -78,6 +80,8 @@ func (a *App) ToJson() map[string]interface{} {
 		"gitCloneUrl":         a.GitCloneURL,
 		"deploymentStrategy":  a.DeploymentStrategy,
 		"port":                a.Port,
+		"shouldExpose":        a.ShouldExpose,
+		"exposePort":          a.ExposePort,
 		"rootDirectory":       a.RootDirectory,
 		"buildCommand":        a.BuildCommand,
 		"startCommand":        a.StartCommand,
@@ -131,7 +135,7 @@ func GetApplicationByID(appId int64) (*App, error) {
 func (a *App) UpdateApplication() error {
 	return db.Model(a).Select("Name", "Description", "AppType", "TemplateName",
 		"GitProviderID", "GitRepository", "GitBranch", "GitCloneURL",
-		"DeploymentStrategy", "Port", "RootDirectory",
+		"DeploymentStrategy", "Port", "ShouldExpose", "ExposePort", "RootDirectory",
 		"BuildCommand", "StartCommand", "DockerfilePath",
 		"CPULimit", "MemoryLimit", "RestartPolicy",
 		"HealthcheckPath", "HealthcheckInterval", "HealthcheckTimeout", "HealthcheckRetries",
@@ -280,12 +284,13 @@ func GetAppCloneURL(appID int64, userID int64) (string, string, bool, error) {
 }
 
 func GetCloneUrlfromAppID(appID int64) (*string, error) {
-	var URL string
-	if err := db.Model(&App{}).Select("git_clone_url").Where("id = ?", appID).Take(&URL).Error; err != nil {
-		fmt.Printf(err.Error(), "eror getting clone git_clone_url")
+	var result struct {
+		GitCloneURL *string `gorm:"column:git_clone_url"`
+	}
+	if err := db.Model(&App{}).Select("git_clone_url").Where("id = ?", appID).Take(&result).Error; err != nil {
 		return nil, err
 	}
-	return &URL, nil
+	return result.GitCloneURL, nil
 }
 
 func GetGitProviderNameByAppID(

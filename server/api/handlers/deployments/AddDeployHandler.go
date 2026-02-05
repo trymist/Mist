@@ -7,6 +7,7 @@ import (
 	"github.com/corecollectives/mist/api/handlers"
 	"github.com/corecollectives/mist/api/middleware"
 	"github.com/corecollectives/mist/git"
+	"github.com/corecollectives/mist/github"
 	"github.com/corecollectives/mist/models"
 	"github.com/corecollectives/mist/queue"
 	"github.com/rs/zerolog/log"
@@ -42,7 +43,13 @@ func AddDeployHandler(w http.ResponseWriter, r *http.Request) {
 		commit, err := git.GetLatestCommit(int64(req.AppId), userId)
 		if err != nil {
 			log.Error().Err(err).Int("app_id", req.AppId).Msg("Error getting latest commit")
-			handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "failed to get latest commit", err.Error())
+			// Check if it's a "no repository configured" error
+			errMsg := err.Error()
+			if errMsg == "no git repository configured for this application" {
+				handlers.SendResponse(w, http.StatusBadRequest, false, nil, "No git repository configured", "Please configure a git repository for this application before deploying")
+				return
+			}
+			handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "failed to get latest commit", errMsg)
 			return
 		}
 		commitHash = commit.SHA
@@ -74,6 +81,19 @@ func AddDeployHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// create github deployment
+	if app.GitRepository != nil {
+		depId, err := github.CreateDeployment(*app.GitRepository, app.GitBranch, int(user.ID))
+		if err != nil {
+			log.Err(err).Msg("failed to create github deployment")
+		}
+
+		deployment.GithubDepId = &depId
+		err = deployment.UpdateDeployment()
+		if err != nil {
+			log.Err(err).Msg("failed to update deployment with GH dep id")
+		}
+	}
 	if err := queue.AddJob(int64(deployment.ID)); err != nil {
 		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "failed to add job to queue", err.Error())
 		return

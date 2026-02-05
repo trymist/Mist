@@ -30,6 +30,8 @@ type Deployment struct {
 	CommitMessage *string `json:"commit_message,omitempty"`
 	CommitAuthor  *string `json:"commit_author,omitempty"`
 
+	GithubDepId *int64 `json:"github_dep_id,omitempty"`
+
 	TriggeredBy *int64 `gorm:"constraint:OnDelete:SET NULL" json:"triggered_by,omitempty"`
 
 	DeploymentNumber *int `json:"deployment_number,omitempty"`
@@ -156,6 +158,10 @@ func GetCommitHashByDeploymentID(depID int64) (string, error) {
 		return "", result.Error
 	}
 	return d.CommitHash, nil
+}
+
+func (d *Deployment) UpdateDeployment() error {
+	return db.Model(&Deployment{}).Where("id = ?", d.ID).Updates(d).Error
 }
 
 func UpdateDeploymentStatus(depID int64, status, stage string, progress int, errorMsg *string) error {

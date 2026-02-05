@@ -58,7 +58,13 @@ func GetLatestCommit(w http.ResponseWriter, r *http.Request) {
 
 	commit, err := git.GetLatestCommit(req.AppID, userInfo.ID)
 	if err != nil {
-		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to get latest commit", err.Error())
+		// Check if it's a "no repository configured" error
+		errMsg := err.Error()
+		if errMsg == "no git repository configured for this application" {
+			handlers.SendResponse(w, http.StatusBadRequest, false, nil, "No git repository configured", "Please configure a git repository for this application")
+			return
+		}
+		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to get latest commit", errMsg)
 		return
 	}
 	handlers.SendResponse(w, http.StatusOK, true, commit, "Latest commit retrieved successfully", "")

@@ -134,6 +134,7 @@ func migrateDbInternal(dbInstance *gorm.DB) error {
 		}
 	}
 
+	// necessary key value pairs should be inserted by the time of startup
 	var wildCardDomain = models.SystemSettingEntry{
 		Key:   "wildcard_domain",
 		Value: "",
@@ -142,11 +143,14 @@ func migrateDbInternal(dbInstance *gorm.DB) error {
 		Key:   "mist_app_name",
 		Value: "mist",
 	}
+
+	// NOTE: should be changed with every new update, or it will break
 	var Version = models.SystemSettingEntry{
 		Key:   "version",
-		Value: "1.0.5",
+		Value: "1.0.6",
 	}
 
+	// templates of prebuild database/queues which can be deployed as an application
 	templates := []models.ServiceTemplate{
 		{
 			Name:              "postgres",

@@ -8,7 +8,6 @@ import (
 
 	"github.com/corecollectives/mist/api/handlers"
 	"github.com/corecollectives/mist/api/middleware"
-	"github.com/corecollectives/mist/docker"
 	"github.com/corecollectives/mist/models"
 	"github.com/corecollectives/mist/utils"
 )
@@ -51,19 +50,17 @@ func CreateDomain(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	go func() {
-		app, err := models.GetApplicationByID(req.AppID)
-		if err == nil {
-			docker.RecreateContainer(app)
-		}
-	}()
-
 	models.LogUserAudit(userInfo.ID, "create", "domain", &domain.ID, map[string]interface{}{
 		"appId":  req.AppID,
 		"domain": domain.Domain,
 	})
 
-	handlers.SendResponse(w, http.StatusOK, true, domain, "Domain created successfully", "")
+	response := map[string]interface{}{
+		"domain":         domain,
+		"actionRequired": "restart",
+		"actionMessage":  "Domain changes require restarting the container to take effect. Would you like to restart now?",
+	}
+	handlers.SendResponse(w, http.StatusOK, true, response, "Domain created successfully", "")
 }
 
 func GetDomains(w http.ResponseWriter, r *http.Request) {
@@ -152,14 +149,6 @@ func UpdateDomain(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Recreate container in background to apply domain changes
-	go func() {
-		app, err := models.GetApplicationByID(domain.AppID)
-		if err == nil {
-			docker.RecreateContainer(app)
-		}
-	}()
-
 	updatedDomain, err := models.GetDomainByID(req.ID)
 	if err != nil {
 		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to retrieve updated domain", err.Error())
@@ -176,7 +165,12 @@ func UpdateDomain(w http.ResponseWriter, r *http.Request) {
 		},
 	})
 
-	handlers.SendResponse(w, http.StatusOK, true, updatedDomain, "Domain updated successfully", "")
+	response := map[string]interface{}{
+		"domain":         updatedDomain,
+		"actionRequired": "restart",
+		"actionMessage":  "Domain changes require restarting the container to take effect. Would you like to restart now?",
+	}
+	handlers.SendResponse(w, http.StatusOK, true, response, "Domain updated successfully", "")
 }
 
 func DeleteDomain(w http.ResponseWriter, r *http.Request) {
@@ -222,20 +216,16 @@ func DeleteDomain(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Recreate container in background to apply domain changes
-	go func() {
-		app, err := models.GetApplicationByID(domain.AppID)
-		if err == nil {
-			docker.RecreateContainer(app)
-		}
-	}()
-
 	models.LogUserAudit(userInfo.ID, "delete", "domain", &req.ID, map[string]interface{}{
 		"appId":  domain.AppID,
 		"domain": domain.Domain,
 	})
 
-	handlers.SendResponse(w, http.StatusOK, true, nil, "Domain deleted successfully", "")
+	response := map[string]interface{}{
+		"actionRequired": "restart",
+		"actionMessage":  "Domain changes require restarting the container to take effect. Would you like to restart now?",
+	}
+	handlers.SendResponse(w, http.StatusOK, true, response, "Domain deleted successfully", "")
 }
 
 func VerifyDomainDNS(w http.ResponseWriter, r *http.Request) {
