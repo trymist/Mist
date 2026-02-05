@@ -4,11 +4,16 @@ All notable changes to this project will be documented in this file.
 The format is based on Keep a Changelog,
 and this project adheres to Semantic Versioning.
 
-## [unreleased]
+## [1.0.6] - 2026-02-05
 
 ### Added 
 - github deployment
 - expose port
+- runtime/buildtime envs
+
+### Fix
+- preview url when no domain/port exposed
+- better error handling when no source configured
 
 ### Changed
 - better restart on app settings change
