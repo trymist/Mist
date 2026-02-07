@@ -8,14 +8,20 @@ interface UseEnvironmentVariablesOptions {
   autoFetch?: boolean;
 }
 
+interface EnvVarResponse {
+  envVariable?: EnvVariable;
+  actionRequired?: 'restart' | 'redeploy';
+  actionMessage?: string;
+}
+
 interface UseEnvironmentVariablesReturn {
   envVars: EnvVariable[];
   loading: boolean;
   error: string | null;
   fetchEnvVars: () => Promise<void>;
-  createEnvVar: (key: string, value: string, runtime?: boolean, buildtime?: boolean) => Promise<EnvVariable | null>;
-  updateEnvVar: (id: number, key: string, value: string, runtime?: boolean, buildtime?: boolean) => Promise<EnvVariable | null>;
-  deleteEnvVar: (id: number) => Promise<boolean>;
+  createEnvVar: (key: string, value: string, runtime?: boolean, buildtime?: boolean) => Promise<EnvVarResponse | null>;
+  updateEnvVar: (id: number, key: string, value: string, runtime?: boolean, buildtime?: boolean) => Promise<EnvVarResponse | null>;
+  deleteEnvVar: (id: number) => Promise<EnvVarResponse | null>;
   refreshEnvVars: () => Promise<void>;
 }
 
@@ -42,16 +48,20 @@ export const useEnvironmentVariables = (options: UseEnvironmentVariablesOptions)
     }
   }, [appId]);
 
-  const createEnvVar = useCallback(async (key: string, value: string, runtime: boolean = true, buildtime: boolean = false): Promise<EnvVariable | null> => {
+  const createEnvVar = useCallback(async (key: string, value: string, runtime: boolean = true, buildtime: boolean = false): Promise<EnvVarResponse | null> => {
     try {
       const response = await applicationsService.createEnvVariable({ appId, key, value, runtime, buildtime });
-      // The backend now returns { envVariable, actionRequired, actionMessage }
+      // The backend returns { envVariable, actionRequired, actionMessage }
       const envVar = response?.envVariable || response;
       if (envVar) {
         setEnvVars(prev => [...prev, envVar]);
         toast.success('Environment variable added');
       }
-      return envVar;
+      return {
+        envVariable: envVar,
+        actionRequired: response?.actionRequired,
+        actionMessage: response?.actionMessage,
+      };
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to add environment variable';
       toast.error(errorMessage);
@@ -59,16 +69,20 @@ export const useEnvironmentVariables = (options: UseEnvironmentVariablesOptions)
     }
   }, [appId]);
 
-  const updateEnvVar = useCallback(async (id: number, key: string, value: string, runtime?: boolean, buildtime?: boolean): Promise<EnvVariable | null> => {
+  const updateEnvVar = useCallback(async (id: number, key: string, value: string, runtime?: boolean, buildtime?: boolean): Promise<EnvVarResponse | null> => {
     try {
       const response = await applicationsService.updateEnvVariable({ id, key, value, runtime, buildtime });
-      // The backend now returns { envVariable, actionRequired, actionMessage }
+      // The backend returns { envVariable, actionRequired, actionMessage }
       const updatedVar = response?.envVariable || response;
       if (updatedVar) {
         setEnvVars(prev => prev.map(v => v.id === id ? updatedVar : v));
         toast.success('Environment variable updated');
       }
-      return updatedVar;
+      return {
+        envVariable: updatedVar,
+        actionRequired: response?.actionRequired,
+        actionMessage: response?.actionMessage,
+      };
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to update environment variable';
       toast.error(errorMessage);
@@ -76,16 +90,19 @@ export const useEnvironmentVariables = (options: UseEnvironmentVariablesOptions)
     }
   }, []);
 
-  const deleteEnvVar = useCallback(async (id: number): Promise<boolean> => {
+  const deleteEnvVar = useCallback(async (id: number): Promise<EnvVarResponse | null> => {
     try {
-      await applicationsService.deleteEnvVariable(id);
+      const response = await applicationsService.deleteEnvVariable(id);
       setEnvVars(prev => prev.filter(v => v.id !== id));
       toast.success('Environment variable deleted');
-      return true;
+      return {
+        actionRequired: response?.actionRequired,
+        actionMessage: response?.actionMessage,
+      };
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to delete environment variable';
       toast.error(errorMessage);
-      return false;
+      return null;
     }
   }, []);
 

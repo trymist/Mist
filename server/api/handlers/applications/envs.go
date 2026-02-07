@@ -56,10 +56,19 @@ func CreateEnvVariable(w http.ResponseWriter, r *http.Request) {
 		"key":    req.Key,
 	})
 
+	var actionRequired, actionMessage string
+	if env.IsBuildtime() {
+		actionRequired = "redeploy"
+		actionMessage = "Buildtime environment variable changes require a full redeployment. Would you like to redeploy now?"
+	} else {
+		actionRequired = "restart"
+		actionMessage = "Runtime environment variable changes require a container restart. Would you like to restart now?"
+	}
+
 	response := map[string]interface{}{
 		"envVariable":    env,
-		"actionRequired": "redeploy",
-		"actionMessage":  "Environment variable changes require a full redeployment to take effect. Would you like to redeploy now?",
+		"actionRequired": actionRequired,
+		"actionMessage":  actionMessage,
 	}
 	handlers.SendResponse(w, http.StatusOK, true, response, "Environment variable created successfully", "")
 }
@@ -162,12 +171,26 @@ func UpdateEnvVariable(w http.ResponseWriter, r *http.Request) {
 		"key":    req.Key,
 	})
 
-	response := map[string]interface{}{
-		"envVariable":    updatedEnv,
-		"actionRequired": "redeploy",
-		"actionMessage":  "Environment variable changes require a full redeployment to take effect. Would you like to redeploy now?",
+	var response map[string]interface{}
+
+	if updatedEnv.IsBuildtime() {
+
+		response = map[string]interface{}{
+			"envVariable":    updatedEnv,
+			"actionRequired": "redeploy",
+			"actionMessage":  "Environment variable changes require a full redeployment to take effect. Would you like to redeploy now?",
+		}
+
+	} else {
+
+		response = map[string]interface{}{
+			"envVariable":    updatedEnv,
+			"actionRequired": "restart",
+			"actionMessage":  "These runtime configuration changes require restarting the container. Would you like to restart now?",
+		}
 	}
 	handlers.SendResponse(w, http.StatusOK, true, response, "Environment variable updated successfully", "")
+
 }
 
 func DeleteEnvVariable(w http.ResponseWriter, r *http.Request) {
@@ -207,6 +230,15 @@ func DeleteEnvVariable(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var actionRequired, actionMessage string
+	if env.IsBuildtime() {
+		actionRequired = "redeploy"
+		actionMessage = "Removing a buildtime environment variable requires a full redeployment. Would you like to redeploy now?"
+	} else {
+		actionRequired = "restart"
+		actionMessage = "Removing a runtime environment variable requires a container restart. Would you like to restart now?"
+	}
+
 	models.LogUserAudit(userInfo.ID, "delete", "env_variable", &req.ID, map[string]interface{}{
 		"app_id": env.AppID,
 		"key":    env.Key,
@@ -219,8 +251,8 @@ func DeleteEnvVariable(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response := map[string]interface{}{
-		"actionRequired": "redeploy",
-		"actionMessage":  "Environment variable changes require a full redeployment to take effect. Would you like to redeploy now?",
+		"actionRequired": actionRequired,
+		"actionMessage":  actionMessage,
 	}
 	handlers.SendResponse(w, http.StatusOK, true, response, "Environment variable deleted successfully", "")
 }

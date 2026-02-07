@@ -41,8 +41,10 @@ export const EnvironmentVariables = ({ appId }: EnvironmentVariablesProps) => {
   const [showEditValue, setShowEditValue] = useState(false);
   const [visibleVarIds, setVisibleVarIds] = useState<Set<number>>(new Set());
 
-  // Dialog state for redeployment
+  // Dialog state for actions (restart/redeploy)
   const [actionDialogOpen, setActionDialogOpen] = useState(false);
+  const [actionType, setActionType] = useState<'restart' | 'redeploy' | null>(null);
+  const [actionMessage, setActionMessage] = useState<string>('');
 
   const parseEnvText = (text: string) => {
     const lines = text.split('\n').filter(line => line.trim());
@@ -89,24 +91,36 @@ export const EnvironmentVariables = ({ appId }: EnvironmentVariablesProps) => {
     }
   };
 
-  const showRedeployDialog = () => {
+  const showActionDialog = (type: 'restart' | 'redeploy', message: string) => {
+    setActionType(type);
+    setActionMessage(message);
     setActionDialogOpen(true);
   };
 
-  const handleRedeploy = async () => {
+  const handleActionConfirm = async () => {
     try {
       setActionDialogOpen(false);
-      toast.info("Starting full redeployment (this may take several minutes)...");
-      await applicationsService.redeploy(appId);
-      toast.success("Redeployment started - environment variables will be applied");
+      if (actionType === 'restart') {
+        toast.info("Restarting container...");
+        await applicationsService.restartContainer(appId);
+        toast.success("Container restarted - environment variables applied");
+      } else {
+        toast.info("Starting full redeployment (this may take several minutes)...");
+        await applicationsService.redeploy(appId);
+        toast.success("Redeployment started - environment variables will be applied");
+      }
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to trigger redeployment");
+      toast.error(error instanceof Error ? error.message : `Failed to ${actionType === 'restart' ? 'restart' : 'redeploy'}`);
     }
   };
 
-  const handleSkipRedeploy = () => {
+  const handleSkipAction = () => {
     setActionDialogOpen(false);
-    toast.info("Environment variable changes will take effect on next redeployment");
+    if (actionType === 'restart') {
+      toast.info("Environment variable changes will take effect on next container restart");
+    } else {
+      toast.info("Environment variable changes will take effect on next redeployment");
+    }
   };
 
   const handleAdd = async (e: React.FormEvent) => {
@@ -130,8 +144,12 @@ export const EnvironmentVariables = ({ appId }: EnvironmentVariablesProps) => {
       setNewBuildtime(false);
       setShowNewValue(false);
       setShowAddForm(false);
-      // Show redeploy dialog since env vars require full redeployment
-      showRedeployDialog();
+      // Show appropriate dialog based on action type
+      const actionReq = result.actionRequired || 'redeploy';
+      const actionMsg = result.actionMessage || (actionReq === 'restart' 
+        ? 'Runtime environment variable changes require a container restart. Would you like to restart now?'
+        : 'Buildtime environment variable changes require a full redeployment. Would you like to redeploy now?');
+      showActionDialog(actionReq, actionMsg);
     }
   };
 
@@ -160,8 +178,8 @@ export const EnvironmentVariables = ({ appId }: EnvironmentVariablesProps) => {
 
     if (successCount > 0) {
       toast.success(`Added ${successCount} environment variable${successCount > 1 ? 's' : ''}`);
-      // Show redeploy dialog since env vars require full redeployment
-      showRedeployDialog();
+      // For bulk add, default to redeploy since we don't track individual types
+      showActionDialog('redeploy', 'Environment variable changes require a full redeployment. Would you like to redeploy now?');
     }
     if (failCount > 0) {
       toast.error(`Failed to add ${failCount} variable${failCount > 1 ? 's' : ''}`);
@@ -188,8 +206,12 @@ export const EnvironmentVariables = ({ appId }: EnvironmentVariablesProps) => {
     const result = await updateEnvVar(id, editKey.trim(), editValue, editRuntime, editBuildtime);
     if (result) {
       setEditingId(null);
-      // Show redeploy dialog since env vars require full redeployment
-      showRedeployDialog();
+      // Show appropriate dialog based on action type
+      const actionReq = result.actionRequired || 'redeploy';
+      const actionMsg = result.actionMessage || (actionReq === 'restart'
+        ? 'Runtime environment variable changes require a container restart. Would you like to restart now?'
+        : 'Buildtime environment variable changes require a full redeployment. Would you like to redeploy now?');
+      showActionDialog(actionReq, actionMsg);
     }
   };
 
@@ -199,8 +221,12 @@ export const EnvironmentVariables = ({ appId }: EnvironmentVariablesProps) => {
     }
     const result = await deleteEnvVar(id);
     if (result) {
-      // Show redeploy dialog since env vars require full redeployment
-      showRedeployDialog();
+      // Show appropriate dialog based on action type
+      const actionReq = result.actionRequired || 'redeploy';
+      const actionMsg = result.actionMessage || (actionReq === 'restart'
+        ? 'Removing a runtime environment variable requires a container restart. Would you like to restart now?'
+        : 'Removing a buildtime environment variable requires a full redeployment. Would you like to redeploy now?');
+      showActionDialog(actionReq, actionMsg);
     }
   };
 
@@ -260,7 +286,7 @@ export const EnvironmentVariables = ({ appId }: EnvironmentVariablesProps) => {
         <Alert>
           <Info className="h-4 w-4" />
           <AlertDescription>
-            Environment variable changes require a full redeploy. Please redeploy your application after making changes for them to take effect.
+            Runtime environment variable changes require a container restart. Buildtime environment variable changes require a full redeployment.
           </AlertDescription>
         </Alert>
 
@@ -577,26 +603,27 @@ export const EnvironmentVariables = ({ appId }: EnvironmentVariablesProps) => {
         )}
       </CardContent>
 
-      {/* Redeploy Dialog */}
+      {/* Action Dialog (Restart/Redeploy) */}
       <Dialog open={actionDialogOpen} onOpenChange={setActionDialogOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <AlertTriangle className="h-5 w-5 text-yellow-500" />
-              Redeployment Required
+              {actionType === 'restart' ? 'Container Restart Required' : 'Redeployment Required'}
             </DialogTitle>
             <DialogDescription>
-              Environment variable changes require a full redeployment to take effect.
-              Would you like to redeploy now?
+              {actionMessage || (actionType === 'restart' 
+                ? 'Environment variable changes require a container restart to take effect.'
+                : 'Environment variable changes require a full redeployment to take effect.')}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="flex gap-2 sm:justify-end">
-            <Button variant="outline" onClick={handleSkipRedeploy}>
+            <Button variant="outline" onClick={handleSkipAction}>
               Skip for Now
             </Button>
-            <Button onClick={handleRedeploy} className="flex items-center gap-2">
+            <Button onClick={handleActionConfirm} className="flex items-center gap-2">
               <RefreshCw className="h-4 w-4" />
-              Redeploy Now
+              {actionType === 'restart' ? 'Restart Now' : 'Redeploy Now'}
             </Button>
           </DialogFooter>
         </DialogContent>
