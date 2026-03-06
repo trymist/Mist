@@ -1,26 +1,24 @@
 import { FullScreenLoading } from "@/components/common";
 import { useAuth } from "@/providers";
 import { Navigate, Route, BrowserRouter as Router, Routes } from "react-router-dom"
-import { Layout } from "./Layout";
 import "./App.css"
 import { Toaster } from "./components/ui/sonner";
-import { CallbackPage } from "./pages/Callback";
-
-import { SetupPage, LoginPage } from "./features/auth";
-import { DashboardPage } from "./features/dashboard";
-import { UsersPage } from "./features/users";
-import { ProjectsPage } from "./features/projects";
-import { GitPage } from "./features/git";
-
-// import { DeploymentsPage } from "./pages/Deployments";
-import { DatabasesPage } from "./pages/Databases";
-import { LogsPage } from "./pages/Logs";
-import { SettingsPage } from "./pages/Settings";
-import { ProfilePage } from "./pages/Profile";
-import { UpdatesPage } from "./pages/Updates";
-import { AuditLogsPage } from "./features/auditLogs";
-import { ProjectPage } from "./features/projects/ProjectPage";
-import { AppPage } from "./features/applications/AppPage";
+import ProtectedLayout from "@/app/(protected)/layout";
+import DashboardPage from "@/app/(protected)/page";
+import LoginPage from "@/app/(auth)/login/page";
+import SetupPage from "@/app/(auth)/setup/page";
+import UsersPage from "@/app/(protected)/users/page";
+import GitPage from "@/app/(protected)/git/page";
+import ProjectsPage from "@/app/(protected)/projects/page";
+import ProjectPage from "@/app/(protected)/projects/[projectId]/page";
+import AppPage from "@/app/(protected)/projects/[projectId]/apps/[appId]/page";
+import DatabasesPage from "@/app/(protected)/databases/page";
+import LogsPage from "@/app/(protected)/logs/page";
+import AuditLogsPage from "@/app/(protected)/audit-logs/page";
+import SettingsPage from "@/app/(protected)/settings/page";
+import ProfilePage from "@/app/(protected)/profile/page";
+import UpdatesPage from "@/app/(protected)/updates/page";
+import CallbackPage from "@/app/(protected)/callback/page";
 
 export default function App() {
   const { setupRequired, user } = useAuth();
@@ -43,7 +41,7 @@ export default function App() {
           </>
         ) : (
           <>
-            <Route element={<Layout />} >
+            <Route element={<ProtectedLayout />} >
               <Route path="/" element={<DashboardPage />} />
               <Route path="/users" element={<UsersPage />} />
               <Route path="/git" element={<GitPage />} />
@@ -68,4 +66,3 @@ export default function App() {
     </Router>
   )
 }
-
