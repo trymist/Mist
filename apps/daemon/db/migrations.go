@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/corecollectives/mist/models"
+	"github.com/trymist/mist/models"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 	"gorm.io/gorm/schema"

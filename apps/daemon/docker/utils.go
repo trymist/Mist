@@ -3,7 +3,7 @@ package docker
 import (
 	"fmt"
 
-	"github.com/corecollectives/mist/models"
+	"github.com/trymist/mist/models"
 )
 
 type EnvironmentVariableSet struct {

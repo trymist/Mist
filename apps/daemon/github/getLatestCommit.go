@@ -14,7 +14,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/corecollectives/mist/models"
+	"github.com/trymist/mist/models"
 )
 
 func GetLatestCommit(appID, userID int64) (*models.LatestCommit, error) {

@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/corecollectives/mist/github"
-	"github.com/corecollectives/mist/models"
+	"github.com/trymist/mist/github"
+	"github.com/trymist/mist/models"
 )
 
 type InstallationTokenResponse struct {

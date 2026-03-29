@@ -6,9 +6,9 @@ import (
 	"path/filepath"
 	"time"
 
-	// "github.com/corecollectives/mist/api/middleware"
-	"github.com/corecollectives/mist/websockets"
+	// "github.com/trymist/mist/api/middleware"
 	"github.com/rs/zerolog/log"
+	"github.com/trymist/mist/websockets"
 )
 
 func InitApiServer() {

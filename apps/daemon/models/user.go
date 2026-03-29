@@ -3,7 +3,7 @@ package models
 import (
 	"time"
 
-	"github.com/corecollectives/mist/utils"
+	"github.com/trymist/mist/utils"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
@@ -165,7 +165,7 @@ func GetUserCount() (int64, error) {
 // import (
 // 	"time"
 
-// 	"github.com/corecollectives/mist/utils"
+// 	"github.com/trymist/mist/utils"
 // 	"golang.org/x/crypto/bcrypt"
 // )
 

@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/corecollectives/mist/models"
+	"github.com/trymist/mist/models"
 )
 
 func GetGitHubAccessToken(userID int) (string, time.Time, error) {

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/corecollectives/mist/cli/cmd"
+	"github.com/trymist/mist/cli/cmd"
 )
 
 const version = "1.0.0"

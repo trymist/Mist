@@ -5,8 +5,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/corecollectives/mist/models"
-	"github.com/corecollectives/mist/utils"
+	"github.com/trymist/mist/models"
+	"github.com/trymist/mist/utils"
 )
 
 type DeploymentEvent struct {

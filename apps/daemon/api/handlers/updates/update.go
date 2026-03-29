@@ -10,10 +10,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/corecollectives/mist/api/handlers"
-	"github.com/corecollectives/mist/api/middleware"
-	"github.com/corecollectives/mist/models"
 	"github.com/rs/zerolog/log"
+	"github.com/trymist/mist/api/handlers"
+	"github.com/trymist/mist/api/middleware"
+	"github.com/trymist/mist/models"
 )
 
 const updateLockFile = "/var/lib/mist/update.lock"
@@ -67,7 +67,7 @@ func TriggerUpdate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	targetVersion := "unknown"
-	resp, err := http.Get("https://api.github.com/repos/corecollectives/mist/releases/latest")
+	resp, err := http.Get("https://api.github.com/repos/trymist/mist/releases/latest")
 	if err == nil {
 		defer resp.Body.Close()
 		if resp.StatusCode == http.StatusOK {
@@ -188,7 +188,7 @@ func TriggerUpdate(w http.ResponseWriter, r *http.Request) {
 	flusher.Flush()
 
 	newVersion := targetVersion
-	resp2, err := http.Get("https://api.github.com/repos/corecollectives/mist/releases/latest")
+	resp2, err := http.Get("https://api.github.com/repos/trymist/mist/releases/latest")
 	if err == nil {
 		defer resp2.Body.Close()
 		if resp2.StatusCode == http.StatusOK {

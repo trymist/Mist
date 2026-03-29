@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/corecollectives/mist/models"
 	"github.com/rs/zerolog/log"
+	"github.com/trymist/mist/models"
 	"gorm.io/gorm"
 )
 

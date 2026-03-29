@@ -5,8 +5,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/corecollectives/mist/fs"
 	_ "github.com/mattn/go-sqlite3"
+	"github.com/trymist/mist/fs"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"

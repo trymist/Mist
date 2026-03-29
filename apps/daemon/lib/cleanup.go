@@ -7,9 +7,9 @@ package lib
 import (
 	"time"
 
-	"github.com/corecollectives/mist/models"
-	"github.com/corecollectives/mist/queue"
 	"github.com/rs/zerolog/log"
+	"github.com/trymist/mist/models"
+	"github.com/trymist/mist/queue"
 )
 
 func CleanupOnStartup() error {

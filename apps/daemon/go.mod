@@ -1,4 +1,4 @@
-module github.com/corecollectives/mist
+module github.com/trymist/mist
 
 go 1.25.1
 

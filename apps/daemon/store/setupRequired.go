@@ -3,7 +3,7 @@ package store
 import (
 	"sync"
 
-	"github.com/corecollectives/mist/models"
+	"github.com/trymist/mist/models"
 )
 
 type SetupState struct {

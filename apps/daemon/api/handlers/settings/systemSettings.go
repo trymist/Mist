@@ -4,10 +4,10 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/corecollectives/mist/api/handlers"
-	"github.com/corecollectives/mist/api/middleware"
-	"github.com/corecollectives/mist/models"
-	"github.com/corecollectives/mist/utils"
+	"github.com/trymist/mist/api/handlers"
+	"github.com/trymist/mist/api/middleware"
+	"github.com/trymist/mist/models"
+	"github.com/trymist/mist/utils"
 )
 
 func GetSystemSettings(w http.ResponseWriter, r *http.Request) {

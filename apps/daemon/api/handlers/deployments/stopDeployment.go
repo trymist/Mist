@@ -7,12 +7,12 @@ import (
 	"path/filepath"
 	"strconv"
 
-	"github.com/corecollectives/mist/api/handlers"
-	"github.com/corecollectives/mist/api/middleware"
-	"github.com/corecollectives/mist/constants"
-	"github.com/corecollectives/mist/models"
-	"github.com/corecollectives/mist/queue"
 	"github.com/rs/zerolog/log"
+	"github.com/trymist/mist/api/handlers"
+	"github.com/trymist/mist/api/middleware"
+	"github.com/trymist/mist/constants"
+	"github.com/trymist/mist/models"
+	"github.com/trymist/mist/queue"
 )
 
 type stopDeployment struct {

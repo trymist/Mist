@@ -5,14 +5,14 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/corecollectives/mist/compose"
-	"github.com/corecollectives/mist/docker"
-	"github.com/corecollectives/mist/fs"
-	"github.com/corecollectives/mist/git"
-	"github.com/corecollectives/mist/github"
-	"github.com/corecollectives/mist/models"
-	"github.com/corecollectives/mist/utils"
 	"github.com/rs/zerolog/log"
+	"github.com/trymist/mist/compose"
+	"github.com/trymist/mist/docker"
+	"github.com/trymist/mist/fs"
+	"github.com/trymist/mist/git"
+	"github.com/trymist/mist/github"
+	"github.com/trymist/mist/models"
+	"github.com/trymist/mist/utils"
 	"gorm.io/gorm"
 )
 

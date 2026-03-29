@@ -6,11 +6,11 @@ import (
 	"os"
 	"time"
 
-	"github.com/corecollectives/mist/github"
-	"github.com/corecollectives/mist/models"
 	"github.com/go-git/go-git/v6"
 	"github.com/go-git/go-git/v6/plumbing"
 	"github.com/rs/zerolog/log"
+	"github.com/trymist/mist/github"
+	"github.com/trymist/mist/models"
 )
 
 func CloneGitRepo(ctx context.Context, url string, branch string, logFile *os.File, path string) error {

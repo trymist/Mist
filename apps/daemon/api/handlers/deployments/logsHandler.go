@@ -8,11 +8,11 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/corecollectives/mist/api/handlers"
-	"github.com/corecollectives/mist/docker"
-	"github.com/corecollectives/mist/models"
-	"github.com/corecollectives/mist/websockets"
 	"github.com/gorilla/websocket"
+	"github.com/trymist/mist/api/handlers"
+	"github.com/trymist/mist/docker"
+	"github.com/trymist/mist/models"
+	"github.com/trymist/mist/websockets"
 )
 
 var upgrader = websocket.Upgrader{

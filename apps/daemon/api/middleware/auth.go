@@ -6,10 +6,10 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/corecollectives/mist/api/handlers"
-	"github.com/corecollectives/mist/models"
 	"github.com/golang-jwt/jwt"
 	"github.com/rs/zerolog/log"
+	"github.com/trymist/mist/api/handlers"
+	"github.com/trymist/mist/models"
 )
 
 var jwtSecret []byte

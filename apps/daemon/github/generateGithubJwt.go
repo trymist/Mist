@@ -4,8 +4,8 @@ import (
 	"encoding/pem"
 	"time"
 
-	"github.com/corecollectives/mist/models"
 	"github.com/golang-jwt/jwt"
+	"github.com/trymist/mist/models"
 )
 
 func GenerateGithubJwt(appID int) (string, error) {

@@ -8,9 +8,9 @@ import (
 	"os"
 	"time"
 
-	"github.com/corecollectives/mist/docker"
-	"github.com/corecollectives/mist/models"
-	"github.com/corecollectives/mist/utils"
+	"github.com/trymist/mist/docker"
+	"github.com/trymist/mist/models"
+	"github.com/trymist/mist/utils"
 	"gorm.io/gorm"
 )
 

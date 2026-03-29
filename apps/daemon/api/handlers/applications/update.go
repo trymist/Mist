@@ -8,11 +8,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/corecollectives/mist/api/handlers"
-	"github.com/corecollectives/mist/api/middleware"
-	"github.com/corecollectives/mist/docker"
-	"github.com/corecollectives/mist/models"
 	"github.com/moby/moby/client"
+	"github.com/trymist/mist/api/handlers"
+	"github.com/trymist/mist/api/middleware"
+	"github.com/trymist/mist/docker"
+	"github.com/trymist/mist/models"
 )
 
 func UpdateApplication(w http.ResponseWriter, r *http.Request) {

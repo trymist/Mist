@@ -8,7 +8,7 @@ sudo rm -f "$LOG_FILE" 2>/dev/null || true
 REAL_USER="${SUDO_USER:-$USER}"
 REAL_HOME="$(getent passwd "$REAL_USER" | cut -d: -f6)"
 
-REPO="https://github.com/corecollectives/mist"
+REPO="https://github.com/trymist/mist"
 APP_NAME="mist"
 INSTALL_DIR="/opt/mist"
 GO_BACKEND_DIR="server"

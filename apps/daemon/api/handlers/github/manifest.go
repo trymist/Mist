@@ -8,8 +8,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/corecollectives/mist/models"
 	"github.com/rs/zerolog/log"
+	"github.com/trymist/mist/models"
 )
 
 type GithubAppConversion struct {

@@ -2,10 +2,10 @@ module mist-test
 
 go 1.25.1
 
-replace github.com/corecollectives/mist => ../server
+replace github.com/trymist/mist => ../../apps/daemon/
 
 require (
-	github.com/corecollectives/mist v0.0.0
+	github.com/trymist/mist v0.0.0
 	gorm.io/driver/sqlite v1.6.0
 	gorm.io/gorm v1.31.1
 )

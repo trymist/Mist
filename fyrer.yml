@@ -1,10 +1,10 @@
 installers:
-  - dir: dash
+  - dir: apps/web
     cmd: bun install
 services:
 
-  - name: server
-    dir: ./server
+  - name: daemon
+    dir: apps/daemon
     cmd: go run main.go
     env:
       ENV: dev
@@ -14,7 +14,7 @@ services:
       - "*.db-journal"
 
   - name: dash
-    dir: ./dash
+    dir: apps/web
     cmd: bun dev --host
     env:
       VITE_API_URL: http://localhost:8080

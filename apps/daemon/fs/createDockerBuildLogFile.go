@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 	"strconv"
 
-	"github.com/corecollectives/mist/constants"
-	"github.com/corecollectives/mist/models"
+	"github.com/trymist/mist/constants"
+	"github.com/trymist/mist/models"
 )
 
 var logPath string = constants.Constants["LogPath"].(string)

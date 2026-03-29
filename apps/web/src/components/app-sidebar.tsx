@@ -132,7 +132,7 @@ const useNavData = () => {
           },
           {
             title: "Contribute",
-            url: "https://github.com/corecollectives/mist",
+            url: "https://github.com/trymist/mist",
             icon: LifeBuoy,
             isActive: location.pathname === "/support",
             newTab: true

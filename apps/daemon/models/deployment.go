@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/corecollectives/mist/utils"
+	"github.com/trymist/mist/utils"
 	"gorm.io/gorm"
 )
 
@@ -239,7 +239,7 @@ func GetDeploymentStatus(depID int64) (string, error) {
 // import (
 // 	"time"
 
-// 	"github.com/corecollectives/mist/utils"
+// 	"github.com/trymist/mist/utils"
 // )
 
 // type DeploymentStatus string

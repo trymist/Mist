@@ -3,7 +3,7 @@ package models
 import (
 	"time"
 
-	"github.com/corecollectives/mist/utils"
+	"github.com/trymist/mist/utils"
 )
 
 type NotificationType string
@@ -155,7 +155,7 @@ func DeleteExpiredNotifications() error {
 // import (
 // 	"time"
 
-// 	"github.com/corecollectives/mist/utils"
+// 	"github.com/trymist/mist/utils"
 // )
 
 // type NotificationType string

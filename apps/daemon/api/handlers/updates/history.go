@@ -4,10 +4,10 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/corecollectives/mist/api/handlers"
-	"github.com/corecollectives/mist/api/middleware"
-	"github.com/corecollectives/mist/models"
 	"github.com/rs/zerolog/log"
+	"github.com/trymist/mist/api/handlers"
+	"github.com/trymist/mist/api/middleware"
+	"github.com/trymist/mist/models"
 )
 
 func GetUpdateHistory(w http.ResponseWriter, r *http.Request) {

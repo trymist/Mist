@@ -4,10 +4,10 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/corecollectives/mist/api/handlers"
-	"github.com/corecollectives/mist/api/middleware"
-	"github.com/corecollectives/mist/git"
-	"github.com/corecollectives/mist/models"
+	"github.com/trymist/mist/api/handlers"
+	"github.com/trymist/mist/api/middleware"
+	"github.com/trymist/mist/git"
+	"github.com/trymist/mist/models"
 )
 
 func GetLatestCommit(w http.ResponseWriter, r *http.Request) {

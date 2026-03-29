@@ -4,7 +4,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/corecollectives/mist/utils"
+	"github.com/trymist/mist/utils"
 	"gorm.io/gorm"
 )
 
@@ -179,7 +179,7 @@ func UpdateProjectMembers(projectID int64, userIDs []int64) error {
 // 	"strings"
 // 	"time"
 
-// 	"github.com/corecollectives/mist/utils"
+// 	"github.com/trymist/mist/utils"
 // )
 
 // type Project struct {

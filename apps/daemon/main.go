@@ -1,14 +1,14 @@
 package main
 
 import (
-	"github.com/corecollectives/mist/api"
-	"github.com/corecollectives/mist/db"
-	"github.com/corecollectives/mist/lib"
-	"github.com/corecollectives/mist/models"
-	"github.com/corecollectives/mist/queue"
-	"github.com/corecollectives/mist/store"
-	"github.com/corecollectives/mist/utils"
 	"github.com/rs/zerolog/log"
+	"github.com/trymist/mist/api"
+	"github.com/trymist/mist/db"
+	"github.com/trymist/mist/lib"
+	"github.com/trymist/mist/models"
+	"github.com/trymist/mist/queue"
+	"github.com/trymist/mist/store"
+	"github.com/trymist/mist/utils"
 )
 
 func main() {

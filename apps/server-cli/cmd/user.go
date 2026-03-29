@@ -8,7 +8,7 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/corecollectives/mist/models"
+	"github.com/trymist/mist/models"
 	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/term"
 )

@@ -1,9 +1,9 @@
 #!/bin/bash
 set -Eeo pipefail
 
-# local Installation Script for Mist
-# lhis script copies the local directory to /opt/mist instead of cloning from GitHub
-# lseful for local development and testing
+# Local installation script for Mist.
+# This copies the local repository to /opt/mist instead of cloning from GitHub.
+# Useful for local development and testing.
 
 LOG_FILE="/tmp/mist-install-local.log"
 sudo rm -f "$LOG_FILE" 2>/dev/null || true
@@ -15,7 +15,11 @@ REAL_HOME="$(getent passwd "$REAL_USER" | cut -d: -f6)"
 APP_NAME="mist"
 INSTALL_DIR="/opt/mist"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-GO_BACKEND_DIR="server"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+DAEMON_DIR="apps/daemon"
+CLI_DIR="apps/server-cli"
+WEB_DIR="apps/web"
+TRAEFIK_COMPOSE_PATH="deploy/traefik-compose.yml"
 GO_BINARY_NAME="mist"
 PORT=8080
 MIST_FILE="/var/lib/mist/mist.db"
@@ -88,17 +92,17 @@ echo "║ 🚀 Mist Local Installation                 ║"
 echo "║ (Development Mode)                         ║"
 echo "╚════════════════════════════════════════════╝"
 echo
-log "Starting Mist local installation from: $SCRIPT_DIR"
+log "Starting Mist local installation from: $REPO_ROOT"
 
 if [ "$EUID" -ne 0 ] && [ -z "${SUDO_USER:-}" ]; then
-    error "This script requires sudo. Run: sudo bash install-local.sh"
+    error "This script requires sudo. Run: sudo bash scripts/install-local.sh"
     exit 1
 fi
 
 # Verify we're in a valid Mist directory
-if [ ! -f "$SCRIPT_DIR/traefik-static.yml" ] || [ ! -d "$SCRIPT_DIR/server" ]; then
+if [ ! -f "$REPO_ROOT/deploy/traefik-static.yml" ] || [ ! -d "$REPO_ROOT/$DAEMON_DIR" ]; then
     error "This doesn't look like a Mist directory!"
-    error "Expected to find traefik-static.yml and server/ directory"
+    error "Expected to find deploy/traefik-static.yml and $DAEMON_DIR/"
     exit 1
 fi
 
@@ -162,7 +166,7 @@ log "Go ready"
 # ---------------- Local Copy ----------------
 
 log "Copying local files to $INSTALL_DIR..."
-debug "Source: $SCRIPT_DIR"
+debug "Source: $REPO_ROOT"
 debug "Destination: $INSTALL_DIR"
 
 # Stop existing service if running
@@ -174,7 +178,7 @@ fi
 # Stop Traefik if running
 if docker ps --format '{{.Names}}' | grep -q "^traefik$"; then
     log "Stopping Traefik container..."
-    docker compose -f "$INSTALL_DIR/traefik-compose.yml" down 2>/dev/null || docker stop traefik 2>/dev/null || true
+    docker compose -f "$INSTALL_DIR/$TRAEFIK_COMPOSE_PATH" down 2>/dev/null || docker stop traefik 2>/dev/null || true
 fi
 
 # Create install directory
@@ -189,12 +193,12 @@ run_step "Copying files" "sudo rsync -av --delete \
     --exclude='*.log' \
     --exclude='mist.db' \
     --exclude='letsencrypt' \
-    --exclude='server/mist' \
-    --exclude='cli/mist-cli' \
+    --exclude='apps/daemon/mist' \
+    --exclude='apps/server-cli/mist-cli' \
     --exclude='.env' \
-    '$SCRIPT_DIR/' '$INSTALL_DIR/'" || exit 1
+    '$REPO_ROOT/' '$INSTALL_DIR/'" || exit 1
 
-[ -d "$INSTALL_DIR/$GO_BACKEND_DIR" ] || { error "Server directory missing"; exit 1; }
+[ -d "$INSTALL_DIR/$DAEMON_DIR" ] || { error "Daemon directory missing"; exit 1; }
 
 run_step "Setting ownership" "sudo chown -R root:root '$INSTALL_DIR'" || exit 1
 
@@ -208,49 +212,49 @@ http:
 EOF
 " || exit 1
 
-cd "$INSTALL_DIR/$GO_BACKEND_DIR"
+cd "$INSTALL_DIR/$DAEMON_DIR"
 [ -f "go.mod" ] || { error "go.mod missing"; exit 1; }
-run_step "Downloading dependencies" "cd '$INSTALL_DIR/$GO_BACKEND_DIR' && go mod download && go mod tidy" || exit 1
-run_step "Building backend" "cd '$INSTALL_DIR/$GO_BACKEND_DIR' && go build -v -o '$GO_BINARY_NAME'" || exit 1
+run_step "Downloading dependencies" "cd '$INSTALL_DIR/$DAEMON_DIR' && go mod download && go mod tidy" || exit 1
+run_step "Building backend" "cd '$INSTALL_DIR/$DAEMON_DIR' && go build -v -o '$GO_BINARY_NAME'" || exit 1
 [ -f "$GO_BINARY_NAME" ] || { error "Binary not created"; exit 1; }
 chmod +x "$GO_BINARY_NAME"
 log "Build complete"
 
 # ---------------- Dashboard Build ----------------
 
-if [ -d "$INSTALL_DIR/dash" ]; then
+if [ -d "$INSTALL_DIR/$WEB_DIR" ]; then
     if ! command -v node >/dev/null 2>&1; then
         error "Node.js not found. Install from: https://nodejs.org/"
         exit 1
     fi
-    if ! command -v bun>/dev/null 2>&1; then
+    if ! command -v bun >/dev/null 2>&1; then
         error "bun not found"
         exit 1
     fi
     
-    run_step "Installing dashboard dependencies" "cd '$INSTALL_DIR/dash' && bun install" || exit 1
-    run_step "Building dashboard" "cd '$INSTALL_DIR/dash' && bun run build" || exit 1
+    run_step "Installing dashboard dependencies" "cd '$INSTALL_DIR/$WEB_DIR' && bun install" || exit 1
+    run_step "Building dashboard" "cd '$INSTALL_DIR/$WEB_DIR' && bun run build" || exit 1
     
-    # Move build output to server/static
-    DASH_BUILD_DIR="$INSTALL_DIR/dash/dist"
-    STATIC_DIR="$INSTALL_DIR/server/static"
+    # Move build output to daemon/static
+    DASH_BUILD_DIR="$INSTALL_DIR/$WEB_DIR/dist"
+    STATIC_DIR="$INSTALL_DIR/$DAEMON_DIR/static"
     
     if [ -d "$DASH_BUILD_DIR" ]; then
         run_step "Moving dashboard build to static folder" "sudo rm -rf '$STATIC_DIR' && sudo mv '$DASH_BUILD_DIR' '$STATIC_DIR'" || exit 1
-        log "Dashboard built and deployed to server/static"
+        log "Dashboard built and deployed to $DAEMON_DIR/static"
     else
         error "Dashboard build output not found"
         exit 1
     fi
 else
-    warn "Dashboard directory not found, skipping dashboard build"
+    warn "Web app directory not found, skipping dashboard build"
 fi
 
 # ---------------- CLI Tool ----------------
 
-if [ -d "$INSTALL_DIR/cli" ]; then
-    if run_step "Building CLI tool" "cd '$INSTALL_DIR/cli' && go mod tidy && go build -o mist-cli"; then
-        if run_step "Installing CLI tool" "sudo cp '$INSTALL_DIR/cli/mist-cli' /usr/local/bin/mist-cli && sudo chmod +x /usr/local/bin/mist-cli"; then
+if [ -d "$INSTALL_DIR/$CLI_DIR" ]; then
+    if run_step "Building CLI tool" "cd '$INSTALL_DIR/$CLI_DIR' && go mod tidy && go build -o mist-cli"; then
+        if run_step "Installing CLI tool" "sudo cp '$INSTALL_DIR/$CLI_DIR/mist-cli' /usr/local/bin/mist-cli && sudo chmod +x /usr/local/bin/mist-cli"; then
             log "CLI tool installed: mist-cli"
         else
             warn "Failed to install CLI tool, but continuing..."
@@ -267,8 +271,8 @@ After=network.target docker.service
 Requires=docker.service
 
 [Service]
-WorkingDirectory=/opt/mist/server
-ExecStart=/opt/mist/server/mist
+WorkingDirectory=/opt/mist/apps/daemon
+ExecStart=/opt/mist/apps/daemon/mist
 Restart=always
 RestartSec=5
 User=root
@@ -285,9 +289,9 @@ sleep 3
 sudo systemctl is-active --quiet "$APP_NAME" || { error "Service failed to start"; sudo journalctl -u "$APP_NAME" -n 20; exit 1; }
 log "Service running"
 
-[ -f "$INSTALL_DIR/traefik-compose.yml" ] || { error "traefik-compose.yml missing"; exit 1; }
+[ -f "$INSTALL_DIR/$TRAEFIK_COMPOSE_PATH" ] || { error "deploy/traefik-compose.yml missing"; exit 1; }
 run_step "Creating Docker network" "docker network inspect traefik-net >/dev/null 2>&1 || docker network create traefik-net" || warn "Network creation failed"
-run_step "Starting Traefik" "docker compose -f '$INSTALL_DIR/traefik-compose.yml' up -d" || warn "Traefik failed"
+run_step "Starting Traefik" "docker compose -f '$INSTALL_DIR/$TRAEFIK_COMPOSE_PATH' up -d" || warn "Traefik failed"
 
 if command -v ufw >/dev/null 2>&1; then
     sudo ufw allow $PORT/tcp 2>&1 || true
@@ -332,5 +336,5 @@ if [ -f "/usr/local/bin/mist-cli" ]; then
 fi
 echo
 echo "💡 To reinstall after changes:"
-echo "   sudo bash install-local.sh"
+echo "   sudo bash scripts/install-local.sh"
 echo

@@ -6,10 +6,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/corecollectives/mist/api/handlers"
-	"github.com/corecollectives/mist/api/middleware"
-	"github.com/corecollectives/mist/models"
-	"github.com/corecollectives/mist/utils"
+	"github.com/trymist/mist/api/handlers"
+	"github.com/trymist/mist/api/middleware"
+	"github.com/trymist/mist/models"
+	"github.com/trymist/mist/utils"
 )
 
 func CreateDomain(w http.ResponseWriter, r *http.Request) {

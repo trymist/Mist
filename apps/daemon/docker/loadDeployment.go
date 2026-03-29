@@ -1,7 +1,7 @@
 package docker
 
 import (
-	"github.com/corecollectives/mist/models"
+	"github.com/trymist/mist/models"
 	"gorm.io/gorm"
 )
 

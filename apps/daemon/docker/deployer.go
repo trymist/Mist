@@ -9,9 +9,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/corecollectives/mist/constants"
-	"github.com/corecollectives/mist/models"
-	"github.com/corecollectives/mist/utils"
+	"github.com/trymist/mist/constants"
+	"github.com/trymist/mist/models"
+	"github.com/trymist/mist/utils"
 	"gorm.io/gorm"
 )
 

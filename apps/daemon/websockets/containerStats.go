@@ -8,12 +8,12 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/corecollectives/mist/docker"
-	"github.com/corecollectives/mist/models"
 	"github.com/gorilla/websocket"
 	"github.com/moby/moby/api/types/container"
 	"github.com/moby/moby/client"
 	"github.com/rs/zerolog/log"
+	"github.com/trymist/mist/docker"
+	"github.com/trymist/mist/models"
 )
 
 type ContainerStatsEvent struct {

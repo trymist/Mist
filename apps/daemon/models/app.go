@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/corecollectives/mist/utils"
+	"github.com/trymist/mist/utils"
 )
 
 type DeploymentStrategy string

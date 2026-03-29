@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/corecollectives/mist/models"
+	"github.com/trymist/mist/models"
 )
 
 func HandleSettingsCommand(args []string) {

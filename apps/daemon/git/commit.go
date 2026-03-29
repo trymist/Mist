@@ -7,9 +7,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/corecollectives/mist/constants"
-	"github.com/corecollectives/mist/github"
-	"github.com/corecollectives/mist/models"
+	"github.com/trymist/mist/constants"
+	"github.com/trymist/mist/github"
+	"github.com/trymist/mist/models"
 )
 
 func GetLatestCommit(appID int64, userID int64) (*models.LatestCommit, error) {

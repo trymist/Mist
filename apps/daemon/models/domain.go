@@ -3,7 +3,7 @@ package models
 import (
 	"time"
 
-	"github.com/corecollectives/mist/utils"
+	"github.com/trymist/mist/utils"
 )
 
 type sslStatus string
@@ -141,7 +141,7 @@ func UpdateDomainDnsStatus(id int64, configured bool, errorMsg *string) error {
 // import (
 // 	"time"
 
-// 	"github.com/corecollectives/mist/utils"
+// 	"github.com/trymist/mist/utils"
 // )
 
 // type Domain struct {

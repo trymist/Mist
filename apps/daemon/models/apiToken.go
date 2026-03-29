@@ -3,7 +3,7 @@ package models
 import (
 	"time"
 
-	"github.com/corecollectives/mist/utils"
+	"github.com/trymist/mist/utils"
 	"gorm.io/gorm"
 )
 

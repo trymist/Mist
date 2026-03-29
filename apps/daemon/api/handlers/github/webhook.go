@@ -8,10 +8,10 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/corecollectives/mist/github"
-	"github.com/corecollectives/mist/models"
-	"github.com/corecollectives/mist/queue"
 	"github.com/rs/zerolog/log"
+	"github.com/trymist/mist/github"
+	"github.com/trymist/mist/models"
+	"github.com/trymist/mist/queue"
 )
 
 type WebhookPayload struct {

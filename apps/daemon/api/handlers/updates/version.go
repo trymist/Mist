@@ -6,10 +6,10 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/corecollectives/mist/api/handlers"
-	"github.com/corecollectives/mist/api/middleware"
-	"github.com/corecollectives/mist/models"
 	"github.com/rs/zerolog/log"
+	"github.com/trymist/mist/api/handlers"
+	"github.com/trymist/mist/api/middleware"
+	"github.com/trymist/mist/models"
 )
 
 type GithubRelease struct {
@@ -95,7 +95,7 @@ func CheckForUpdates(w http.ResponseWriter, r *http.Request) {
 	log.Info().Str("current_version", currentVersion).Int64("user_id", userInfo.ID).Msg("Checking for updates")
 
 	// Fetch latest release from GitHub
-	resp, err := http.Get("https://api.github.com/repos/corecollectives/mist/releases/latest")
+	resp, err := http.Get("https://api.github.com/repos/trymist/mist/releases/latest")
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to fetch latest release from GitHub")
 		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to check for updates", err.Error())

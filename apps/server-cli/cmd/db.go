@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/corecollectives/mist/models"
 	_ "github.com/mattn/go-sqlite3"
+	"github.com/trymist/mist/models"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )

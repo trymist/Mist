@@ -7,9 +7,9 @@ import (
 	"testing"
 	"time"
 
-	mistdb "github.com/corecollectives/mist/db"
-	"github.com/corecollectives/mist/models"
-	"github.com/corecollectives/mist/utils"
+	mistdb "github.com/trymist/mist/db"
+	"github.com/trymist/mist/models"
+	"github.com/trymist/mist/utils"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
