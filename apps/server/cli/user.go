@@ -1,11 +1,9 @@
-package cmd
+package cli
 
 import (
-	"bufio"
 	"flag"
 	"fmt"
 	"os"
-	"strings"
 	"syscall"
 
 	"github.com/trymist/mist/models"
@@ -65,13 +63,11 @@ func changePassword(args []string) {
 		os.Exit(1)
 	}
 
-	// Initialize database
 	if err := initDB(); err != nil {
 		fmt.Printf("Error: %v\n", err)
 		os.Exit(1)
 	}
 
-	// Check if user exists
 	user, err := models.GetUserByUsername(*username)
 	if err != nil {
 		fmt.Printf("Error: User '%s' not found\n", *username)
@@ -107,12 +103,6 @@ func changePassword(args []string) {
 		newPassword = *password
 	}
 
-	// WARNING: password validation isn't implemented yet, will be implemented in future releases
-	// if len(newPassword) < 8 {
-	// 	fmt.Println("Error: Password must be at least 8 characters long")
-	// 	os.Exit(1)
-	// }
-
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
 	if err != nil {
 		fmt.Printf("Error hashing password: %v\n", err)
@@ -124,7 +114,7 @@ func changePassword(args []string) {
 		os.Exit(1)
 	}
 
-	fmt.Printf("✓ Password changed successfully for user '%s'\n", *username)
+	fmt.Printf("Password changed successfully for user '%s'\n", *username)
 }
 
 func listUsers(args []string) {
@@ -158,15 +148,4 @@ func listUsers(args []string) {
 	}
 	fmt.Println("----------------------------------------------")
 	fmt.Printf("Total: %d users\n", len(users))
-}
-
-func promptConfirm(message string) bool {
-	reader := bufio.NewReader(os.Stdin)
-	fmt.Printf("%s (y/N): ", message)
-	response, err := reader.ReadString('\n')
-	if err != nil {
-		return false
-	}
-	response = strings.ToLower(strings.TrimSpace(response))
-	return response == "y" || response == "yes"
 }

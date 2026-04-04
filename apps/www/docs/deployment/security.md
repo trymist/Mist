@@ -100,9 +100,9 @@ Currently, the JWT secret is **hardcoded** in the application (`server/api/middl
 
 **Workaround:** Modify the code before deployment:
 ```bash
-cd /opt/mist/server/api/middleware
+cd /opt/mist/apps/server/api/middleware
 # Edit auth.go and change line 14 to use a strong random value
-# Then rebuild: cd /opt/mist/server && go build -o ../bin/server main.go
+# Then rebuild: cd /opt/mist/apps/server && go build -o mist ./cmd/mist
 ```
 
 **Upcoming:** Configurable JWT secret via environment variable.

@@ -11,7 +11,7 @@ REAL_HOME="$(getent passwd "$REAL_USER" | cut -d: -f6)"
 REPO="https://github.com/trymist/mist"
 APP_NAME="mist"
 INSTALL_DIR="/opt/mist"
-GO_BACKEND_DIR="server"
+GO_BACKEND_DIR="apps/server"
 GO_BINARY_NAME="mist"
 DB_FILE="/var/lib/mist/mist.db"
 BACKUP_DIR="/var/lib/mist/backups"
@@ -112,7 +112,7 @@ rollback() {
         # Rebuild from rollback
         cd "$INSTALL_DIR/$GO_BACKEND_DIR"
         go mod tidy >>"$LOG_FILE" 2>&1 || true
-        go build -o "$GO_BINARY_NAME" >>"$LOG_FILE" 2>&1 || true
+        go build -o "$GO_BINARY_NAME" ./cmd/mist >>"$LOG_FILE" 2>&1 || true
         
         sudo systemctl restart "$APP_NAME" >>"$LOG_FILE" 2>&1 || true
     fi
@@ -398,7 +398,7 @@ if ! run_step "Rebuilding backend binary" "
     cd '$INSTALL_DIR/$GO_BACKEND_DIR' &&
     go mod download &&
     go mod tidy &&
-    go build -v -o '$GO_BINARY_NAME'
+    go build -v -o '$GO_BINARY_NAME' ./cmd/mist
 "; then
     error "Failed to rebuild backend"
     rollback
@@ -422,16 +422,15 @@ fi
 log "Backend binary verified"
 
 
-if [ -d "$INSTALL_DIR/cli" ]; then
+if [ -d "$INSTALL_DIR/$GO_BACKEND_DIR/cmd/cli" ]; then
     if ! run_step "Rebuilding CLI tool" "
-        cd '$INSTALL_DIR/cli' &&
-        go mod tidy &&
-        go build -o mist-cli
+        cd '$INSTALL_DIR/$GO_BACKEND_DIR' &&
+        go build -o mist-cli ./cmd/cli
     "; then
         warn "Failed to rebuild CLI, but continuing..."
     else
         if ! run_step "Installing CLI tool" "
-            sudo cp '$INSTALL_DIR/cli/mist-cli' /usr/local/bin/mist-cli &&
+            sudo cp '$INSTALL_DIR/$GO_BACKEND_DIR/mist-cli' /usr/local/bin/mist-cli &&
             sudo chmod +x /usr/local/bin/mist-cli
         "; then
             warn "Failed to install CLI, but continuing..."

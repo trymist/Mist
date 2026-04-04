@@ -11,8 +11,7 @@ REPO="https://github.com/trymist/mist"
 BRANCH="release"
 APP_NAME="mist"
 INSTALL_DIR="/opt/mist"
-DAEMON_DIR="apps/daemon"
-CLI_DIR="apps/server-cli"
+SERVER_DIR="apps/server"
 TRAEFIK_COMPOSE_PATH="deploy/traefik-compose.yml"
 GO_BINARY_NAME="mist"
 PORT=8080
@@ -170,8 +169,8 @@ else
 	run_step "Cloning repository" "git clone -b '$BRANCH' --single-branch --depth 1 '$REPO' '$INSTALL_DIR'" || exit 1
 fi
 
-[ -d "$INSTALL_DIR/$DAEMON_DIR" ] || {
-	error "Daemon directory missing"
+[ -d "$INSTALL_DIR/$SERVER_DIR" ] || {
+	error "Server directory missing"
 	exit 1
 }
 
@@ -189,13 +188,13 @@ http:
 EOF
 " || exit 1
 
-cd "$INSTALL_DIR/$DAEMON_DIR"
+cd "$INSTALL_DIR/$SERVER_DIR"
 [ -f "go.mod" ] || {
 	error "go.mod missing"
 	exit 1
 }
-run_step "Downloading dependencies" "cd '$INSTALL_DIR/$DAEMON_DIR' && go mod download && go mod tidy" || exit 1
-run_step "Building backend" "cd '$INSTALL_DIR/$DAEMON_DIR' && go build -v -o '$GO_BINARY_NAME'" || exit 1
+run_step "Downloading dependencies" "cd '$INSTALL_DIR/$SERVER_DIR' && go mod download && go mod tidy" || exit 1
+run_step "Building backend" "cd '$INSTALL_DIR/$SERVER_DIR' && go build -v -o '$GO_BINARY_NAME' ./cmd/mist" || exit 1
 [ -f "$GO_BINARY_NAME" ] || {
 	error "Binary not created"
 	exit 1
@@ -205,9 +204,9 @@ log "Build complete"
 
 # ---------------- CLI Tool ----------------
 
-if [ -d "$INSTALL_DIR/$CLI_DIR" ]; then
-	if run_step "Building CLI tool" "cd '$INSTALL_DIR/$CLI_DIR' && go mod tidy && go build -o mist-cli"; then
-		if run_step "Installing CLI tool" "sudo cp '$INSTALL_DIR/$CLI_DIR/mist-cli' /usr/local/bin/mist-cli && sudo chmod +x /usr/local/bin/mist-cli"; then
+if [ -d "$INSTALL_DIR/$SERVER_DIR/cmd/cli" ]; then
+	if run_step "Building CLI tool" "cd '$INSTALL_DIR/$SERVER_DIR' && go build -o mist-cli ./cmd/cli"; then
+		if run_step "Installing CLI tool" "sudo cp '$INSTALL_DIR/$SERVER_DIR/mist-cli' /usr/local/bin/mist-cli && sudo chmod +x /usr/local/bin/mist-cli"; then
 			log "CLI tool installed: mist-cli"
 		else
 			warn "Failed to install CLI tool, but continuing..."
@@ -224,8 +223,8 @@ After=network.target docker.service
 Requires=docker.service
 
 [Service]
-WorkingDirectory=/opt/mist/apps/daemon
-ExecStart=/opt/mist/apps/daemon/mist
+WorkingDirectory=/opt/mist/apps/server
+ExecStart=/opt/mist/apps/server/mist
 Restart=always
 RestartSec=5
 User=root

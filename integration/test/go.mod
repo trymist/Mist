@@ -2,7 +2,7 @@ module mist-test
 
 go 1.25.1
 
-replace github.com/trymist/mist => ../../apps/daemon/
+replace github.com/trymist/mist => ../../apps/server/
 
 require (
 	github.com/trymist/mist v0.0.0

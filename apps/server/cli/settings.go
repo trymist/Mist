@@ -1,4 +1,4 @@
-package cmd
+package cli
 
 import (
 	"flag"
@@ -71,7 +71,6 @@ func getSettings(args []string) {
 		os.Exit(1)
 	}
 
-	// Initialize database
 	if err := initDB(); err != nil {
 		fmt.Printf("Error: %v\n", err)
 		os.Exit(1)
@@ -130,7 +129,6 @@ func setSetting(args []string) {
 		os.Exit(1)
 	}
 
-	// Initialize database
 	if err := initDB(); err != nil {
 		fmt.Printf("Error: %v\n", err)
 		os.Exit(1)
@@ -171,11 +169,10 @@ func setSetting(args []string) {
 		os.Exit(1)
 	}
 
-	fmt.Printf("✓ Setting '%s' updated to '%s'\n", *key, *value)
+	fmt.Printf("Setting '%s' updated to '%s'\n", *key, *value)
 }
 
 func listSettings(args []string) {
-	// Initialize database
 	if err := initDB(); err != nil {
 		fmt.Printf("Error: %v\n", err)
 		os.Exit(1)

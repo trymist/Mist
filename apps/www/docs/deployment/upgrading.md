@@ -123,11 +123,11 @@ git fetch origin
 git pull origin main
 
 # 3. Rebuild backend
-cd server
-go build -o ../bin/server main.go
+cd apps/server
+go build -o mist ./cmd/mist
 
 # 4. Rebuild frontend
-cd ../dash
+cd ../web
 npm install
 npm run build
 
@@ -154,8 +154,8 @@ git fetch --all --tags
 git checkout tags/v1.2.3  # or specific commit hash
 
 # 3. Rebuild (same as Method 2)
-cd server && go build -o ../bin/server main.go
-cd ../dash && npm install && npm run build
+cd apps/server && go build -o mist ./cmd/mist
+cd ../web && npm install && npm run build
 
 # 4. Restart
 sudo systemctl start mist
@@ -197,7 +197,7 @@ Look for messages like:
 
 Migrations are stored in:
 ```
-/opt/mist/server/db/migrations/
+/opt/mist/apps/server/db/migrations/
 ├── 001_Create_User.sql
 ├── 002_Create_Projects.sql
 ├── 003_Create_Project_members.sql
@@ -303,7 +303,7 @@ git reset --hard <previous-commit-hash>
 sudo cp /var/backups/mist_backup_YYYYMMDD.db /var/lib/mist/mist.db
 
 # 4. Rebuild (if code changed)
-cd server && go build -o ../bin/server main.go
+cd apps/server && go build -o mist ./cmd/mist
 
 # 5. Restart
 sudo systemctl start mist
@@ -332,8 +332,8 @@ cd /opt/mist
 git reset --hard <previous-commit>
 
 # Rebuild
-cd server && go build -o ../bin/server main.go
-cd ../dash && npm install && npm run build
+cd apps/server && go build -o mist ./cmd/mist
+cd ../web && npm install && npm run build
 
 # Restart services
 sudo systemctl start mist
@@ -385,11 +385,11 @@ If you need to rollback, please report the issue on [GitHub Issues](https://gith
 **Build fails during upgrade:**
 ```bash
 # Clear build cache and retry
-cd /opt/mist/server
+cd /opt/mist/apps/server
 go clean -cache
-go build -o ../bin/server main.go
+go build -o mist ./cmd/mist
 
-cd /opt/mist/dash
+cd /opt/mist/apps/web
 rm -rf node_modules package-lock.json
 npm install
 npm run build

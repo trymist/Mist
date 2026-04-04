@@ -115,8 +115,8 @@ sudo chmod 644 /var/lib/mist/mist.db
 3. **Binary issues:**
 ```bash
 # Rebuild the binary
-cd /opt/mist/server
-sudo go build -o mist
+cd /opt/mist/apps/server
+sudo go build -o mist ./cmd/mist
 sudo systemctl restart mist
 ```
 
@@ -485,8 +485,8 @@ sudo journalctl -u mist -n 100 --no-pager
 cd /opt/mist
 git log --oneline -10
 sudo git reset --hard <previous-commit>
-cd server
-sudo go build -o mist
+cd apps/server
+sudo go build -o mist ./cmd/mist
 sudo systemctl restart mist
 ```
 
@@ -511,8 +511,8 @@ curl -fsSL https://trymist.cloud/install.sh | sudo bash
 ls -la /usr/local/bin/mist-cli
 
 # If not found, rebuild and install
-cd /opt/mist/cli
-sudo go build -o mist-cli
+cd /opt/mist/apps/server
+sudo go build -o mist-cli ./cmd/cli
 sudo cp mist-cli /usr/local/bin/
 sudo chmod +x /usr/local/bin/mist-cli
 ```

@@ -190,9 +190,9 @@ curl -fsSL https://trymist.cloud/install.sh | sudo bash
 sudo go clean -cache -modcache
 
 # Rebuild manually
-cd /opt/mist/server
+cd /opt/mist/apps/server
 sudo go mod tidy
-sudo go build -o mist
+sudo go build -o mist ./cmd/mist
 
 # Restart service
 sudo systemctl restart mist
@@ -228,7 +228,7 @@ sudo systemctl start mist
 #### Binary Not Executable
 ```bash
 # Make binary executable
-sudo chmod +x /opt/mist/server/mist
+sudo chmod +x /opt/mist/apps/server/mist
 
 # Restart service
 sudo systemctl restart mist
@@ -237,9 +237,9 @@ sudo systemctl restart mist
 #### Missing Dependencies
 ```bash
 # Reinstall dependencies
-cd /opt/mist/server
+cd /opt/mist/apps/server
 sudo go mod download
-sudo go build -o mist
+sudo go build -o mist ./cmd/mist
 sudo systemctl restart mist
 ```
 
@@ -286,9 +286,9 @@ sudo git checkout <branch-name>
 sudo git pull origin <branch-name>
 
 # Build and restart
-cd server
+cd apps/server
 sudo go mod tidy
-sudo go build -o mist
+sudo go build -o mist ./cmd/mist
 sudo systemctl restart mist
 ```
 
@@ -308,8 +308,8 @@ git log --oneline -10
 sudo git reset --hard <commit-hash>
 
 # Rebuild
-cd server
-sudo go build -o mist
+cd apps/server
+sudo go build -o mist ./cmd/mist
 
 # Restart
 sudo systemctl restart mist
@@ -324,8 +324,8 @@ git tag -l
 sudo git checkout tags/v1.0.0
 
 # Rebuild and restart
-cd server
-sudo go build -o mist
+cd apps/server
+sudo go build -o mist ./cmd/mist
 sudo systemctl restart mist
 ```
 

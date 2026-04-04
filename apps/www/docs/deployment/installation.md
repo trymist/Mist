@@ -72,12 +72,12 @@ The script performs the following steps:
    - Starts Traefik via Docker Compose
 
 7. **Build Frontend**
-   - Runs `bun install` and `bun run build` in `/opt/mist/dash`
-   - Copies built files to `/opt/mist/server/static/`
+   - Runs `bun install` and `bun run build` in `/opt/mist/apps/web`
+   - Copies built files to `/opt/mist/apps/server/static/`
 
 8. **Build Backend**
-   - Runs `go mod tidy` and `go build` in `/opt/mist/server`
-   - Creates binary at `/opt/mist/server/mist`
+   - Runs `go mod tidy` and `go build ./cmd/mist` in `/opt/mist/apps/server`
+   - Creates binary at `/opt/mist/apps/server/mist`
 
 9. **Create Data Directory**
    - Creates `/var/lib/mist/`
@@ -395,14 +395,14 @@ git clone https://github.com/trymist/mist.git
 cd mist
 
 # Frontend
-cd dash
+cd apps/web
 bun install
 bun run dev  # Runs on port 5173
 
 # Backend (separate terminal)
-cd server
+cd ../server
 go mod tidy
-go run main.go  # Runs on port 8080
+go run ./cmd/mist  # Runs on port 8080
 ```
 
 [Learn more about development setup →](https://github.com/trymist/mist#development)

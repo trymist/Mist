@@ -137,8 +137,8 @@ ls -la /usr/local/bin/mist-cli
 
 If not found, rebuild and install the CLI:
 ```bash
-cd /opt/mist/cli
-sudo go build -o mist-cli
+cd /opt/mist/apps/server
+sudo go build -o mist-cli ./cmd/cli
 sudo cp mist-cli /usr/local/bin/
 sudo chmod +x /usr/local/bin/mist-cli
 

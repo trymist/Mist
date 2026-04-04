@@ -1,34 +1,32 @@
-package main
+package cli
 
 import (
 	"flag"
 	"fmt"
 	"os"
-
-	"github.com/trymist/mist/cli/cmd"
 )
 
 const version = "1.0.0"
 
-func main() {
-	if len(os.Args) < 2 {
+func Run(args []string) {
+	flag.Usage = printUsage
+
+	if len(args) == 0 {
 		printUsage()
 		os.Exit(1)
 	}
 
-	command := os.Args[1]
-
-	switch command {
+	switch args[0] {
 	case "user":
-		cmd.HandleUserCommand(os.Args[2:])
+		HandleUserCommand(args[1:])
 	case "settings":
-		cmd.HandleSettingsCommand(os.Args[2:])
+		HandleSettingsCommand(args[1:])
 	case "version":
 		fmt.Printf("Mist CLI version %s\n", version)
 	case "help", "-h", "--help":
 		printUsage()
 	default:
-		fmt.Printf("Unknown command: %s\n\n", command)
+		fmt.Printf("Unknown command: %s\n\n", args[0])
 		printUsage()
 		os.Exit(1)
 	}
@@ -52,8 +50,4 @@ func printUsage() {
 	fmt.Println("  mist-cli user change-password --username admin")
 	fmt.Println("  mist-cli settings get --key wildcard_domain")
 	fmt.Println("  mist-cli settings set --key wildcard_domain --value example.com")
-}
-
-func init() {
-	flag.Usage = printUsage
 }

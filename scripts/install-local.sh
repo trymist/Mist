@@ -16,8 +16,7 @@ APP_NAME="mist"
 INSTALL_DIR="/opt/mist"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-DAEMON_DIR="apps/daemon"
-CLI_DIR="apps/server-cli"
+SERVER_DIR="apps/server"
 WEB_DIR="apps/web"
 TRAEFIK_COMPOSE_PATH="deploy/traefik-compose.yml"
 GO_BINARY_NAME="mist"
@@ -100,9 +99,9 @@ if [ "$EUID" -ne 0 ] && [ -z "${SUDO_USER:-}" ]; then
 fi
 
 # Verify we're in a valid Mist directory
-if [ ! -f "$REPO_ROOT/deploy/traefik-static.yml" ] || [ ! -d "$REPO_ROOT/$DAEMON_DIR" ]; then
+if [ ! -f "$REPO_ROOT/deploy/traefik-static.yml" ] || [ ! -d "$REPO_ROOT/$SERVER_DIR" ]; then
     error "This doesn't look like a Mist directory!"
-    error "Expected to find deploy/traefik-static.yml and $DAEMON_DIR/"
+    error "Expected to find deploy/traefik-static.yml and $SERVER_DIR/"
     exit 1
 fi
 
@@ -193,12 +192,12 @@ run_step "Copying files" "sudo rsync -av --delete \
     --exclude='*.log' \
     --exclude='mist.db' \
     --exclude='letsencrypt' \
-    --exclude='apps/daemon/mist' \
-    --exclude='apps/server-cli/mist-cli' \
+    --exclude='apps/server/mist' \
+    --exclude='apps/server/mist-cli' \
     --exclude='.env' \
     '$REPO_ROOT/' '$INSTALL_DIR/'" || exit 1
 
-[ -d "$INSTALL_DIR/$DAEMON_DIR" ] || { error "Daemon directory missing"; exit 1; }
+[ -d "$INSTALL_DIR/$SERVER_DIR" ] || { error "Server directory missing"; exit 1; }
 
 run_step "Setting ownership" "sudo chown -R root:root '$INSTALL_DIR'" || exit 1
 
@@ -212,10 +211,10 @@ http:
 EOF
 " || exit 1
 
-cd "$INSTALL_DIR/$DAEMON_DIR"
+cd "$INSTALL_DIR/$SERVER_DIR"
 [ -f "go.mod" ] || { error "go.mod missing"; exit 1; }
-run_step "Downloading dependencies" "cd '$INSTALL_DIR/$DAEMON_DIR' && go mod download && go mod tidy" || exit 1
-run_step "Building backend" "cd '$INSTALL_DIR/$DAEMON_DIR' && go build -v -o '$GO_BINARY_NAME'" || exit 1
+run_step "Downloading dependencies" "cd '$INSTALL_DIR/$SERVER_DIR' && go mod download && go mod tidy" || exit 1
+run_step "Building backend" "cd '$INSTALL_DIR/$SERVER_DIR' && go build -v -o '$GO_BINARY_NAME' ./cmd/mist" || exit 1
 [ -f "$GO_BINARY_NAME" ] || { error "Binary not created"; exit 1; }
 chmod +x "$GO_BINARY_NAME"
 log "Build complete"
@@ -235,13 +234,13 @@ if [ -d "$INSTALL_DIR/$WEB_DIR" ]; then
     run_step "Installing dashboard dependencies" "cd '$INSTALL_DIR/$WEB_DIR' && bun install" || exit 1
     run_step "Building dashboard" "cd '$INSTALL_DIR/$WEB_DIR' && bun run build" || exit 1
     
-    # Move build output to daemon/static
+    # Move build output to server/static
     DASH_BUILD_DIR="$INSTALL_DIR/$WEB_DIR/dist"
-    STATIC_DIR="$INSTALL_DIR/$DAEMON_DIR/static"
+    STATIC_DIR="$INSTALL_DIR/$SERVER_DIR/static"
     
     if [ -d "$DASH_BUILD_DIR" ]; then
         run_step "Moving dashboard build to static folder" "sudo rm -rf '$STATIC_DIR' && sudo mv '$DASH_BUILD_DIR' '$STATIC_DIR'" || exit 1
-        log "Dashboard built and deployed to $DAEMON_DIR/static"
+        log "Dashboard built and deployed to $SERVER_DIR/static"
     else
         error "Dashboard build output not found"
         exit 1
@@ -252,9 +251,9 @@ fi
 
 # ---------------- CLI Tool ----------------
 
-if [ -d "$INSTALL_DIR/$CLI_DIR" ]; then
-    if run_step "Building CLI tool" "cd '$INSTALL_DIR/$CLI_DIR' && go mod tidy && go build -o mist-cli"; then
-        if run_step "Installing CLI tool" "sudo cp '$INSTALL_DIR/$CLI_DIR/mist-cli' /usr/local/bin/mist-cli && sudo chmod +x /usr/local/bin/mist-cli"; then
+if [ -d "$INSTALL_DIR/$SERVER_DIR/cmd/cli" ]; then
+    if run_step "Building CLI tool" "cd '$INSTALL_DIR/$SERVER_DIR' && go build -o mist-cli ./cmd/cli"; then
+        if run_step "Installing CLI tool" "sudo cp '$INSTALL_DIR/$SERVER_DIR/mist-cli' /usr/local/bin/mist-cli && sudo chmod +x /usr/local/bin/mist-cli"; then
             log "CLI tool installed: mist-cli"
         else
             warn "Failed to install CLI tool, but continuing..."
@@ -271,8 +270,8 @@ After=network.target docker.service
 Requires=docker.service
 
 [Service]
-WorkingDirectory=/opt/mist/apps/daemon
-ExecStart=/opt/mist/apps/daemon/mist
+WorkingDirectory=/opt/mist/apps/server
+ExecStart=/opt/mist/apps/server/mist
 Restart=always
 RestartSec=5
 User=root

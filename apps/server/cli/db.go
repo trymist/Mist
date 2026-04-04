@@ -1,13 +1,11 @@
-package cmd
+package cli
 
 import (
 	"fmt"
 	"os"
 
-	_ "github.com/mattn/go-sqlite3"
+	"github.com/trymist/mist/db"
 	"github.com/trymist/mist/models"
-	"gorm.io/driver/sqlite"
-	"gorm.io/gorm"
 )
 
 const dbPath = "/var/lib/mist/mist.db"
@@ -17,11 +15,11 @@ func initDB() error {
 		return fmt.Errorf("database file not found at %s. Please ensure Mist is installed and running", dbPath)
 	}
 
-	db, err := gorm.Open(sqlite.Open(dbPath), &gorm.Config{})
+	dbInstance, err := db.InitDB()
 	if err != nil {
-		return fmt.Errorf("failed to open database: %v", err)
+		return fmt.Errorf("failed to initialize database: %v", err)
 	}
 
-	models.SetDB(db)
+	models.SetDB(dbInstance)
 	return nil
 }

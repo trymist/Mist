@@ -13,7 +13,7 @@ REPO="https://github.com/trymist/mist"
 BRANCH="release"
 APP_NAME="mist"
 INSTALL_DIR="/opt/mist"
-GO_BACKEND_DIR="server"
+GO_BACKEND_DIR="apps/server"
 GO_BINARY_NAME="mist"
 PORT=8080
 MIST_FILE="/var/lib/mist/mist.db"
@@ -179,16 +179,16 @@ EOF
 cd "$INSTALL_DIR/$GO_BACKEND_DIR"
 [ -f "go.mod" ] || { error "go.mod missing"; exit 1; }
 run_step "Downloading dependencies" "cd '$INSTALL_DIR/$GO_BACKEND_DIR' && go mod download && go mod tidy" || exit 1
-run_step "Building backend" "cd '$INSTALL_DIR/$GO_BACKEND_DIR' && go build -v -o '$GO_BINARY_NAME'" || exit 1
+run_step "Building backend" "cd '$INSTALL_DIR/$GO_BACKEND_DIR' && go build -v -o '$GO_BINARY_NAME' ./cmd/mist" || exit 1
 [ -f "$GO_BINARY_NAME" ] || { error "Binary not created"; exit 1; }
 chmod +x "$GO_BINARY_NAME"
 log "Build complete"
 
 # ---------------- CLI Tool ----------------
 
-if [ -d "$INSTALL_DIR/cli" ]; then
-    if run_step "Building CLI tool" "cd '$INSTALL_DIR/cli' && go mod tidy && go build -o mist-cli"; then
-        if run_step "Installing CLI tool" "sudo cp '$INSTALL_DIR/cli/mist-cli' /usr/local/bin/mist-cli && sudo chmod +x /usr/local/bin/mist-cli"; then
+if [ -d "$INSTALL_DIR/$GO_BACKEND_DIR/cmd/cli" ]; then
+    if run_step "Building CLI tool" "cd '$INSTALL_DIR/$GO_BACKEND_DIR' && go build -o mist-cli ./cmd/cli"; then
+        if run_step "Installing CLI tool" "sudo cp '$INSTALL_DIR/$GO_BACKEND_DIR/mist-cli' /usr/local/bin/mist-cli && sudo chmod +x /usr/local/bin/mist-cli"; then
             log "CLI tool installed: mist-cli"
         else
             warn "Failed to install CLI tool, but continuing..."
@@ -205,8 +205,8 @@ After=network.target docker.service
 Requires=docker.service
 
 [Service]
-WorkingDirectory=/opt/mist/server
-ExecStart=/opt/mist/server/mist
+WorkingDirectory=/opt/mist/apps/server
+ExecStart=/opt/mist/apps/server/mist
 Restart=always
 RestartSec=5
 User=root
