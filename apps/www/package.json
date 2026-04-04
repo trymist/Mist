@@ -1,0 +1,19 @@
+{
+  "name": "mist-docs",
+  "version": "1.0.0",
+  "description": "Documentation for Mist - Self-hostable PaaS",
+  "type": "module",
+  "scripts": {
+    "sync-changelog": "node scripts/fetch-changelog.js",
+    "docs:dev": "vitepress dev docs",
+    "docs:build": "npm run sync-changelog && vitepress build docs",
+    "docs:preview": "vitepress preview docs"
+  },
+  "keywords": ["mist", "paas", "documentation", "self-hosted"],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "vitepress": "^1.6.4",
+    "vue": "^3.5.26"
+  }
+}
