@@ -80,14 +80,14 @@ If you prefer manual control:
 
 **Backend (Go):**
 ```bash
-cd apps/server
+cd server
 go mod tidy 
-go run ./cmd/mist
+go run .
 ```
 
 **Frontend (React/TypeScript):**
 ```bash
-cd apps/web
+cd dash
 bun install
 bun run dev
 ```

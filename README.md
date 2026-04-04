@@ -2,8 +2,8 @@
 
 A lightweight, self-hostable Platform-as-a-Service built for developers. Deploy Docker applications from Git with automatic builds, custom domains, SSL certificates, and real-time monitoring.
 
-[![PR Build Check](https://github.com/trymist/mist/actions/workflows/pr-build-check.yml/badge.svg)](https://github.com/trymist/mist/actions/workflows/pr-build-check.yml)
-[![Tests](https://github.com/trymist/mist/actions/workflows/tests.yml/badge.svg)](https://github.com/trymist/mist/actions/workflows/tests.yml)
+[![PR Build Check](https://github.com/corecollectives/Mist/actions/workflows/pr-build-check.yml/badge.svg)](https://github.com/corecollectives/Mist/actions/workflows/pr-build-check.yml)
+[![Tests](https://github.com/corecollectives/Mist/actions/workflows/tests.yml/badge.svg)](https://github.com/corecollectives/Mist/actions/workflows/tests.yml)
 
 ## Quick Start
 
@@ -47,14 +47,14 @@ cargo install fyrer
 Clone and start the development environment:
 
 ```bash
-git clone https://github.com/trymist/mist
+git clone https://github.com/corecollectives/mist
 cd mist
 fyrer
 ```
 
 ## Community
 
-- [GitHub](https://github.com/trymist/mist)
+- [GitHub](https://github.com/corecollectives/mist)
 - [Discord](https://discord.gg/hr6TCQDDkj)
 - [Documentation](https://trymist.cloud/guide/getting-started.html)
 
