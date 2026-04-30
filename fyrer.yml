@@ -3,9 +3,9 @@ installers:
     cmd: bun install
 services:
 
-  - name: server
-    dir: ./server
-    cmd: go run main.go
+  - name: daemon 
+    dir: .
+    cmd: go run cmd/daemon/main.go
     env:
       ENV: dev
     watch: true
@@ -13,8 +13,8 @@ services:
       - "*.db*"
       - "*.db-journal"
 
-  - name: dash
-    dir: ./dash
-    cmd: bun dev --host
+  - name: web
+    dir: ./web
+    cmd: bun dev 
     env:
-      VITE_API_URL: http://localhost:8080
+      NEXT_PUBLIC_API_URL: http://localhost:8080
