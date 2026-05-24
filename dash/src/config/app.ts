@@ -21,7 +21,9 @@ interface AppConfig {
       defaultPageSize: number;
     };
   };
+
 }
+
 
 const config: AppConfig = {
   api: {
@@ -48,3 +50,4 @@ const config: AppConfig = {
 };
 
 export default config;
+
