@@ -1,20 +1,28 @@
 installers:
-  - dir: dash
-    cmd: bun install
-services:
+  - dir: ./ 
+    cmd: go mod tidy
 
+
+services:
   - name: daemon 
     dir: .
     cmd: go run cmd/daemon/main.go
     env:
       ENV: dev
     watch: true
-    ignore: 
-      - "*.db*"
-      - "*.db-journal"
+    include: 
+      - "cmd/daemon/**"
+      - "internal/**"
+      - "views/**"
+      - "assets/**"
+      - "public/**"
 
-  - name: web
-    dir: ./web
-    cmd: bun dev 
-    env:
-      NEXT_PUBLIC_API_URL: http://localhost:8080
+  - name: templ
+    dir: .
+    cmd: go tool templ generate --watch
+    watch: false
+
+  - name: tailwind
+    dir: .
+    cmd: bunx @tailwindcss/cli -i assets/global.css -o public/output.css --watch
+    quiet: true

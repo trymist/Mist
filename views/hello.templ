@@ -1,0 +1,9 @@
+package views 
+
+import "mist/views/layouts"
+
+templ Hello(name string) {
+	@layouts.Base("Hello") {
+		<h1 class="text-2xl font-bold text-red-500">Hello, { name }!</h1>
+	}
+}

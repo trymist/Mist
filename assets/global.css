@@ -1,0 +1,4 @@
+@import "tailwindcss";
+@source "../views/";
+@source "../internal/";
+@source "../cmd/daemon/"

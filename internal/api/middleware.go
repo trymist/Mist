@@ -13,5 +13,6 @@ func authMiddleware() gin.HandlerFunc {
 			c.AbortWithStatus(401)
 			return
 		}
+		c.Next()
 	}
 }

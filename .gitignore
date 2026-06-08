@@ -7,3 +7,6 @@ mist.db
 letsencrypt/acme.json
 testing/
 
+# generated files
+bin/
+public/output.css
