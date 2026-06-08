@@ -1,5 +1,3 @@
-
-
 CREATE TABLE IF NOT EXISTS resources (
     id TEXT PRIMARY KEY,
     environmentId TEXT NOT NULL REFERENCES environments(id) ON DELETE CASCADE,

@@ -1,4 +1,3 @@
-
 CREATE TABLE IF NOT EXISTS githubApps (
     id TEXT PRIMARY KEY,
     githubAppName TEXT NOT NULL,
@@ -8,7 +7,7 @@ CREATE TABLE IF NOT EXISTS githubApps (
     githubPrivateKey TEXT, 
     githubWebhookSecret TEXT,
     createdByUserId TEXT NOT NULL REFERENCES users(id) ON DELETE SET NULL,
-    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE INDEX idx_github_apps_created_by_user_id ON githubApps(createdByUserId);

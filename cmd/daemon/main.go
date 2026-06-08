@@ -1,7 +1,12 @@
 package main
 
-import "fmt"
+import (
+	"mist/internal/db"
+)
 
 func main() {
-	fmt.Println("Daemon is running...")
+	err := db.Init()
+	if err != nil {
+		panic(err)
+	}
 }

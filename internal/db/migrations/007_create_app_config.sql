@@ -1,21 +1,17 @@
-
-
 CREATE TABLE IF NOT EXISTS app_configs (
     resourceId TEXT PRIMARY KEY NOT NULL REFERENCES resources(id) ON DELETE CASCADE,
     name TEXT NOT NULL,
     createdByUserId TEXT REFERENCES users(id) ON DELETE SET NULL,
     description TEXT,
 
-    sourceType TEXT NOT NULL CHECK (source IN ('github', 'gitlab', 'rawGit', 'dockerHub', 'customRegistry')),
+    sourceType TEXT NOT NULL CHECK (sourceType IN ('github', 'gitlab', 'rawGit', 'dockerHub', 'customRegistry')),
     sourceId TEXT NOT NULL,
 
-    -- git specific fields
     gitBranch TEXT,
     gitRepoName TEXT,
     gitRepoOwner TEXT,
     gitCloneUrl TEXT,
 
-    -- docker specific fields
     dockerImageName TEXT,
     dockerImageTag TEXT,
 
@@ -35,4 +31,7 @@ CREATE TABLE IF NOT EXISTS app_configs (
 
     createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-)
+);
+
+CREATE INDEX IF NOT EXISTS idx_app_configs_created_by_user_id ON app_configs(createdByUserId);
+CREATE INDEX IF NOT EXISTS idx_app_configs_gitCloneUrl ON app_configs(gitCloneUrl);
