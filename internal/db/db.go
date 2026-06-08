@@ -8,11 +8,16 @@ import (
 var Conn *sql.DB
 
 func Init() error {
-	Conn, err := sql.Open("sqlite", "mist.db")
+	conn, err := sql.Open("sqlite", "mist.db")
+	Conn = conn
 	if err != nil {
 		return err
 	}
 	Conn.SetMaxIdleConns(1)
 	Conn.SetMaxOpenConns(1)
+	err = Conn.Ping()
+	if err != nil {
+		return err
+	}
 	return dbMigrate(Conn)
 }
