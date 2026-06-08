@@ -1,16 +1,23 @@
 package api
 
 import (
+	"time"
+
 	"github.com/gin-gonic/gin"
 )
 
 func StartServer() {
 	r := gin.Default()
-	r.GET("/ping", func(c *gin.Context) {
+	registerRoutes(r)
+	r.Run(":7777")
+}
+
+func registerRoutes(r *gin.Engine) {
+	r.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{
-			"message": "pong",
+			"status":    "ok",
+			"timestamp": time.Now().Local().Format(time.DateTime),
 		})
 	})
 
-	r.Run(":7777")
 }
