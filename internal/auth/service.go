@@ -4,6 +4,8 @@ import (
 	"mist/internal/db"
 	"mist/internal/utils"
 	"time"
+
+	"github.com/mattn/go-sqlite3"
 )
 
 func RefreshSession(token string, userID string, expiresAt *time.Time) error {
@@ -28,10 +30,13 @@ func CreateSession(userID string, token string, expiresAt *time.Time) error {
 	return err
 }
 
-func AuthenticateUser(username, passwordHash string) (string, error) {
-	var userID string
-	err := db.Conn.QueryRow("SELECT id FROM users WHERE username = $1 AND passwordHash = $2", username, passwordHash).Scan(&userID)
+func AuthenticateUser(username, password string) (string, error) {
+	var userID, passwordHash string
+	err := db.Conn.QueryRow("SELECT id, passwordHash FROM users WHERE username = $1 AND passwordHash = $2", username, passwordHash).Scan(&userID, &passwordHash)
 	if err != nil {
+		if err == sqlite3. {
+			return "", nil
+		}
 		return "", err
 	}
 	return userID, nil

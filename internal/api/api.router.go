@@ -15,4 +15,5 @@ func registerApiRoutes(r *gin.RouterGroup) {
 		})
 	})
 	r.POST("/register", auth.RegisterHandler())
+	r.POST("/login", auth.LoginHandler())
 }

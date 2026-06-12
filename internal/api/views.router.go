@@ -13,6 +13,7 @@ func registerViewsRoutes(r *gin.RouterGroup) {
 		c.Redirect(302, "/register")
 	})
 	r.GET("/register", auth.RegisterView())
+	r.GET("/login", auth.LoginView())
 	r.GET("/home", func(c *gin.Context) {
 		pages.Home().Render(context.Background(), c.Writer)
 	})

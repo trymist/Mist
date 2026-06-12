@@ -16,12 +16,6 @@ func LoginHandler() func(c *gin.Context) {
 		var req LoginRequest
 		req.Username = c.PostForm("username")
 		req.Password = c.PostForm("password")
-		passwordHash, err := utils.HashPassword(req.Password)
-		if err != nil {
-			c.String(200, "Failed to hash password")
-			return
-		}
-		req.Password = passwordHash
 		userID, err := AuthenticateUser(req.Username, req.Password)
 		if err != nil {
 			c.String(200, "Invalid username or password")
