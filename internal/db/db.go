@@ -8,7 +8,7 @@ import (
 var Conn *sql.DB
 
 func Init() error {
-	conn, err := sql.Open("sqlite", "mist.db")
+	conn, err := sql.Open("sqlite3", "mist.db")
 	Conn = conn
 	if err != nil {
 		return err

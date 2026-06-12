@@ -1,24 +1,29 @@
 package auth
 
 import (
+	"database/sql"
+	"fmt"
 	"mist/internal/db"
 	"mist/internal/utils"
 	"time"
-
-	"github.com/mattn/go-sqlite3"
 )
 
 func RefreshSession(token string, userID string, expiresAt *time.Time) error {
-	err := db.Conn.QueryRow(`
+	_, err := db.Conn.Exec(`
 		UPDATE sessions
-		SET expiresAt = $1
-		WHERE token = $2 AND userId = $3
-		`, expiresAt, token, userID).Err()
-	err = db.Conn.QueryRow(`
-		UPDATE users 
-		SET lastLogin = $1
-		WHERE id = $2
-		`, time.Now(), userID).Err()
+		SET expiresAt = ?, token = ?
+		WHERE userId = ?
+	`, expiresAt, token, userID)
+	if err != nil {
+		return err
+	}
+
+	_, err = db.Conn.Exec(`
+		UPDATE users
+		SET lastLogin = ?
+		WHERE id = ?
+	`, time.Now(), userID)
+
 	return err
 }
 
@@ -32,17 +37,25 @@ func CreateSession(userID string, token string, expiresAt *time.Time) error {
 
 func AuthenticateUser(username, password string) (string, error) {
 	var userID, passwordHash string
-	err := db.Conn.QueryRow("SELECT id, passwordHash FROM users WHERE username = $1 AND passwordHash = $2", username, passwordHash).Scan(&userID, &passwordHash)
+	err := db.Conn.QueryRow("SELECT id, passwordHash FROM users WHERE username = $1", username).Scan(&userID, &passwordHash)
 	if err != nil {
-		if err == sqlite3. {
-			return "", nil
+		fmt.Println("Error querying user:", err)
+		if err == sql.ErrNoRows {
+			return "", fmt.Errorf("invalid username or password")
 		}
 		return "", err
+	}
+	fmt.Println("User found, checking password")
+	fmt.Println("Password hash from DB:", passwordHash)
+	passwordMatch := utils.CheckPasswordHash(password, passwordHash)
+	if !passwordMatch {
+		return "", fmt.Errorf("invalid username or password")
 	}
 	return userID, nil
 }
 
 func RegisterUser(fullName, username, email, password string) (string, error) {
+
 	userID := utils.GenerateRandomID("usr")
 	err := db.Conn.QueryRow("INSERT INTO users (id, fullName, username, email, passwordHash, role) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id",
 		userID, fullName, username, email, password, "admin").Scan(&userID)

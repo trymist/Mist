@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"fmt"
 	"mist/internal/utils"
 	"time"
 
@@ -16,25 +17,29 @@ func LoginHandler() func(c *gin.Context) {
 		var req LoginRequest
 		req.Username = c.PostForm("username")
 		req.Password = c.PostForm("password")
+		fmt.Println("Login attempt for user:", req.Username)
 		userID, err := AuthenticateUser(req.Username, req.Password)
 		if err != nil {
 			c.String(200, "Invalid username or password")
 			return
 		}
+		fmt.Println("User authenticated, generating token")
 		jwtToken, err := utils.SignJWT(userID)
 		if err != nil {
 			c.String(200, "Failed to generate token")
 			return
 		}
+		fmt.Println("Token generated:", jwtToken)
 		err = RefreshSession(userID, jwtToken, utils.Pointer(time.Now().Add(7*24*time.Hour)))
 		if err != nil {
+			fmt.Println("Failed to refresh session:", err)
 			c.String(200, "Failed to refresh session, try again later")
 			return
 		}
+		fmt.Println("Session refreshed for user:", userID)
 		c.SetCookie("mist-token", jwtToken, 3600*24*7, "/", "", false, true)
 		c.Header("HX-Redirect", "/home")
 		c.Status(200)
-
 	}
 }
 
