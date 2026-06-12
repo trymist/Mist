@@ -39,14 +39,11 @@ func AuthenticateUser(username, password string) (string, error) {
 	var userID, passwordHash string
 	err := db.Conn.QueryRow("SELECT id, passwordHash FROM users WHERE username = $1", username).Scan(&userID, &passwordHash)
 	if err != nil {
-		fmt.Println("Error querying user:", err)
 		if err == sql.ErrNoRows {
 			return "", fmt.Errorf("invalid username or password")
 		}
 		return "", err
 	}
-	fmt.Println("User found, checking password")
-	fmt.Println("Password hash from DB:", passwordHash)
 	passwordMatch := utils.CheckPasswordHash(password, passwordHash)
 	if !passwordMatch {
 		return "", fmt.Errorf("invalid username or password")

@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"fmt"
 	"mist/views/pages"
 
 	"github.com/gin-gonic/gin"
@@ -10,7 +9,6 @@ import (
 func RegisterView() func(c *gin.Context) {
 	return func(c *gin.Context) {
 		isFirstUser, err := IsFirstUser()
-		fmt.Println("isFirstUser", isFirstUser, "err", err)
 		if err != nil {
 			pages.Error(err.Error()).Render(c.Request.Context(), c.Writer)
 			return
