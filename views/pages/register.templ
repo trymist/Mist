@@ -5,7 +5,6 @@ import "mist/views/layouts"
 templ Register() {
 	@layouts.Base("Register") {
 		<div class="h-screen bg-zinc-950 flex overflow-hidden">
-			<!-- Left Side -->
 			<div class="hidden lg:flex lg:w-1/2 relative overflow-hidden border-r border-zinc-900">
 				<div class="absolute inset-0 bg-zinc-950"></div>
 				<div class="absolute -top-40 -left-40 h-96 w-96 rounded-full bg-sky-500/10 blur-3xl"></div>
@@ -63,7 +62,7 @@ templ Register() {
 						</p>
 						<form
 							class="mt-6 space-y-3"
-							hx-post="/register"
+							hx-post="/api/register"
 							hx-target="#register-error"
 							hx-swap="innerHTML"
 							@htmx:before-request="loading = true"
@@ -126,7 +125,6 @@ templ Register() {
 									type="password"
 									id="password"
 									name="password"
-									minlength="8"
 									placeholder="••••••••"
 									class="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-2.5 text-white placeholder:text-zinc-500 focus:border-sky-500 focus:outline-none focus:ring-4 focus:ring-sky-500/10 transition"
 								/>
@@ -142,7 +140,6 @@ templ Register() {
 									type="password"
 									id="passwordConfirm"
 									name="passwordConfirm"
-									minlength="8"
 									placeholder="••••••••"
 									class="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-2.5 text-white placeholder:text-zinc-500 focus:border-sky-500 focus:outline-none focus:ring-4 focus:ring-sky-500/10 transition"
 								/>

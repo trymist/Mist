@@ -1,0 +1,22 @@
+package pages
+
+import "mist/views/layouts"
+
+templ Home() {
+	@layouts.Base("Home") {
+		<div class="h-screen bg-zinc-950 flex items-center justify-center">
+			<div class="bg-zinc-900/70 backdrop-blur-xl rounded-lg p-8 shadow-lg max-w-md text-center">
+				<h1 class="text-3xl font-bold text-white mb-4">Welcome to Mist</h1>
+				<p class="text-zinc-400 mb-6">
+					Self-host your applications with the simplicity of Vercel and the freedom of owning your infrastructure.
+				</p>
+				<a
+					href="/register"
+					class="inline-block px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors duration-300"
+				>
+					Get Started
+				</a>
+			</div>
+		</div>
+	}
+}
